@@ -1,0 +1,25 @@
+.routine-rail {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 1fr);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lime) var(--panel);
+}
+
+.routine-rail::-webkit-scrollbar {
+  height: 9px;
+}
+
+.routine-rail::-webkit-scrollbar-track {
+  background: var(--panel);
+  border-radius: 999px;
+}
+
+.routine-rail::-webkit-scrollbar-thumb {
+  background: var(--lime);
+  border: 2px solid var(--panel);
+  border-radius: 999px;
+}
