@@ -10,7 +10,7 @@ const headers = {
 
 // Ultra-compact payload minifier: saves 50%+ storage without losing any data
 function minifyWorkoutPayload(w) {
-  return {
+  const clean = {
     id: w.id,
     name: w.name ? w.name.trim() : "Workout",
     date: w.date,
@@ -35,6 +35,8 @@ function minifyWorkoutPayload(w) {
       return cleanEx;
     })
   };
+  if (w.user_id) clean.user_id = w.user_id;
+  return clean;
 }
 
 export async function pushWorkoutToSupabase(w) {
@@ -81,6 +83,7 @@ export async function pushRoutineToSupabase(r) {
         group: e.group || "Main"
       }))
     };
+    if (r.user_id) payload.user_id = r.user_id;
     await fetch(`${SUPABASE_URL}/rest/v1/routines`, {
       method: "POST",
       headers,
@@ -142,6 +145,7 @@ export async function syncAllWithSupabase(localDb, setSyncStatus) {
         for (const rw of remoteWorkouts) {
           remoteMap.set(rw.id, {
             id: rw.id,
+            user_id: rw.user_id,
             name: rw.name,
             date: rw.date,
             durationMinutes: rw.duration_minutes || 45,
@@ -176,6 +180,7 @@ export async function syncAllWithSupabase(localDb, setSyncStatus) {
         for (const rr of remoteRoutines) {
           remoteRMap.set(rr.id, {
             id: rr.id,
+            user_id: rr.user_id,
             name: rr.name,
             exercises: rr.exercises || [],
             updatedAt: rr.created_at || new Date().toISOString()
