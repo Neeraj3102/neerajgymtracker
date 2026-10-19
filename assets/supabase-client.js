@@ -96,46 +96,65 @@ export async function syncAllWithSupabase(localDb, setSyncStatus) {
   try {
     if (setSyncStatus) setSyncStatus("syncing", "Syncing with Supabase...");
 
-    // 1. Fetch remote workouts
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*`, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
-      }
-    });
-    if (!res.ok) throw new Error("Failed to reach Supabase");
-    const remoteWorkouts = await res.json();
-
-    // 2. Fetch local workouts
-    const localWorkouts = await localDb.workouts.filter(w => !w.deletedAt).toArray();
-
-    // Map remote to local format
-    const remoteMap = new Map();
-    for (const rw of remoteWorkouts) {
-      remoteMap.set(rw.id, {
-        id: rw.id,
-        name: rw.name,
-        date: rw.date,
-        durationMinutes: rw.duration_minutes || 45,
-        notes: rw.notes || "",
-        exercises: rw.exercises || [],
-        updatedAt: rw.created_at || new Date().toISOString()
+    // 1. Sync Workouts
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
       });
+      if (res.ok) {
+        const remoteWorkouts = await res.json();
+        const localWorkouts = await localDb.workouts.filter(w => !w.deletedAt).toArray();
+        const remoteMap = new Map();
+        for (const rw of remoteWorkouts) {
+          remoteMap.set(rw.id, {
+            id: rw.id,
+            name: rw.name,
+            date: rw.date,
+            durationMinutes: rw.duration_minutes || 45,
+            notes: rw.notes || "",
+            exercises: rw.exercises || [],
+            updatedAt: rw.created_at || new Date().toISOString()
+          });
+        }
+        for (const lw of localWorkouts) {
+          if (!remoteMap.has(lw.id)) await pushWorkoutToSupabase(lw);
+        }
+        for (const [id, rw] of remoteMap.entries()) {
+          const exists = await localDb.workouts.get(id);
+          if (!exists) await localDb.workouts.put(rw);
+        }
+      }
+    } catch (e) {
+      console.warn("Workout sync sub-step error:", e);
     }
 
-    // Push missing local workouts to Supabase
-    for (const lw of localWorkouts) {
-      if (!remoteMap.has(lw.id)) {
-        await pushWorkoutToSupabase(lw);
+    // 2. Sync Routines
+    try {
+      const resRoutines = await fetch(`${SUPABASE_URL}/rest/v1/routines?select=*`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (resRoutines.ok) {
+        const remoteRoutines = await resRoutines.json();
+        const localRoutines = await localDb.routines.filter(r => !r.deletedAt).toArray();
+        const remoteRMap = new Map();
+        for (const rr of remoteRoutines) {
+          remoteRMap.set(rr.id, {
+            id: rr.id,
+            name: rr.name,
+            exercises: rr.exercises || [],
+            updatedAt: rr.created_at || new Date().toISOString()
+          });
+        }
+        for (const lr of localRoutines) {
+          if (!remoteRMap.has(lr.id)) await pushRoutineToSupabase(lr);
+        }
+        for (const [id, rr] of remoteRMap.entries()) {
+          const exists = await localDb.routines.get(id);
+          if (!exists) await localDb.routines.put(rr);
+        }
       }
-    }
-
-    // Save missing remote workouts into local IndexedDB
-    for (const [id, rw] of remoteMap.entries()) {
-      const exists = await localDb.workouts.get(id);
-      if (!exists) {
-        await localDb.workouts.put(rw);
-      }
+    } catch (e) {
+      console.warn("Routine sync sub-step error:", e);
     }
 
     if (setSyncStatus) setSyncStatus("synced", "Synced with Supabase");
