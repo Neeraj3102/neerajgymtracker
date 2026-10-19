@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=permanent-routines-4";
+import { r as h } from "./index-CiCrIMMp.js?v=profiles-v5";
 
 class ChartErrorBoundary extends h.Component {
   constructor(props) {
