@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js";
+import { r as h } from "./index-CiCrIMMp.js?v=supabase-sync-3";
 
 class ChartErrorBoundary extends h.Component {
   constructor(props) {
