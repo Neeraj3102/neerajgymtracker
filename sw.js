@@ -32,6 +32,6 @@
     self.skipWaiting();
     i.clientsClaim();
     i.cleanupOutdatedCaches();
-    i.registerRoute(new i.NavigationRoute(i.createHandlerBoundToURL("/index.html")));
+    i.registerRoute(new i.NavigationRoute(i.createHandlerBoundToURL("index.html")));
   });
 })();
