@@ -1,0 +1,97 @@
+/* =========================================================================
+   FORGE Mobile & iOS / Android PWA Enhancements (v13)
+   ========================================================================= */
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Topbar notch & Dynamic Island protection */
+.topbar {
+  padding-top: var(--sat) !important;
+  height: calc(74px + var(--sat)) !important;
+  padding-left: max(16px, var(--sal)) !important;
+  padding-right: max(16px, var(--sar)) !important;
+}
+
+/* Bottom floating navbar safe area & gesture bar protection */
+.bottom-nav {
+  bottom: calc(14px + var(--sab)) !important;
+  width: min(600px, calc(100% - 24px)) !important;
+  touch-action: manipulation;
+}
+
+/* Page shell bottom clearance (prevents content being blocked by bottom nav) */
+.app-shell {
+  padding-bottom: calc(115px + var(--sab)) !important;
+}
+
+/* Responsive Main content padding on mobile */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 20px 16px 40px !important;
+  }
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    padding-bottom: 18px !important;
+    margin-bottom: 20px !important;
+  }
+  .page-header h1 {
+    font-size: 32px !important;
+    line-height: 1.1 !important;
+  }
+  .routine-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  .routine-header-actions button {
+    flex: 1 !important;
+  }
+}
+
+/* Prevent iOS Safari 16px auto-zoom bug on input focus */
+@media (max-width: 768px) {
+  input, select, textarea, input[type="text"], input[type="number"], input[type="date"] {
+    font-size: 16px !important;
+  }
+}
+
+/* Fast tap interaction (eliminates 300ms double-tap delay) */
+button, a, input, select, textarea, .nav-button, .nav-lift, .routine-tile, .card, .workout-card {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile modal & protocol sheet touch scrolling */
+.modal-backdrop, .form-modal, .neeraj-protocol-modal {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .form-modal, .neeraj-protocol-modal {
+    width: 95vw !important;
+    max-height: calc(88vh - var(--sab)) !important;
+    padding: 16px 14px !important;
+    margin: auto !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* Toast notification safe clearance */
+.toast {
+  bottom: calc(96px + var(--sab)) !important;
+}
