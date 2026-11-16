@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v11";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v12";
 
 export function initNeerajPlanReact() {}
 
