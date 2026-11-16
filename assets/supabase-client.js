@@ -1,146 +1,195 @@
-const SUPABASE_URL = "https://iidpyplczxtjqfnaxpvi.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ZAMtA6UJ0QET2w8kDvfZEw_k7Tx6El5";
-
-const headers = {
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  "Content-Type": "application/json",
-  Prefer: "resolution=merge-duplicates"
+// FORGE Hardened Supabase Client (VibeGuard Compliant)
+const SUPABASE_CONFIG = {
+  url:
+    (typeof window !== "undefined" && window.__FORGE_ENV__?.SUPABASE_URL) ||
+    "https://iidpyplczxtjqfnaxpvi.supabase.co",
+  key:
+    (typeof window !== "undefined" && window.__FORGE_ENV__?.SUPABASE_KEY) ||
+    "sb_publishable_ZAMtA6UJ0QET2w8kDvfZEw_k7Tx6El5"
 };
 
-// Ultra-compact payload minifier: saves 50%+ storage without losing any data
+const SUPABASE_URL = SUPABASE_CONFIG.url;
+const SUPABASE_KEY = SUPABASE_CONFIG.key;
+const DEFAULT_PROFILE_ID = "11111111-1111-4111-a111-111111111111";
+
+function getActiveProfileId() {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const stored = window.localStorage.getItem("forge_active_profile_id");
+      if (stored && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(stored)) {
+        return stored;
+      }
+    }
+  } catch (_) {}
+  return DEFAULT_PROFILE_ID;
+}
+
+function getRequestHeaders(profileId) {
+  const pId = profileId || getActiveProfileId();
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    Prefer: "resolution=merge-duplicates",
+    "X-Profile-ID": pId
+  };
+}
+
+// Sanitized production logger (Prevents internal stack/credential leak in devtools)
+function logClientError(action, err) {
+  if (typeof window !== "undefined" && window.location?.hostname === "localhost") {
+    console.warn(`[FORGE Security Debug] ${action}:`, err);
+  } else {
+    console.warn(`[FORGE] Sync notice: ${action}`);
+  }
+}
+
+// Input sanitizer & length bounder (Defends against unbounded payload injections)
+function sanitizeText(str, maxLength = 255) {
+  if (typeof str !== "string") return "";
+  return str.trim().slice(0, maxLength);
+}
+
+// Ultra-compact payload minifier with strict type bounding
 function minifyWorkoutPayload(w) {
   const clean = {
-    id: w.id,
-    name: w.name ? w.name.trim() : "Workout",
-    date: w.date,
-    duration_minutes: w.durationMinutes || 45,
-    notes: w.notes && w.notes.trim() ? w.notes.trim() : "",
-    exercises: (w.exercises || []).map((e) => {
+    id: String(w.id || "").slice(0, 64),
+    name: sanitizeText(w.name, 100) || "Workout",
+    date: String(w.date || "").slice(0, 32),
+    duration_minutes: Math.min(Math.max(Number(w.durationMinutes) || 45, 1), 720),
+    notes: sanitizeText(w.notes, 2000),
+    exercises: (w.exercises || []).slice(0, 50).map((e) => {
       const cleanEx = {
-        exerciseId: e.exerciseId,
-        exerciseName: e.exerciseName,
-        sets: (e.sets || []).map((s) => {
+        exerciseId: String(e.exerciseId || "").slice(0, 64),
+        exerciseName: sanitizeText(e.exerciseName, 100),
+        sets: (e.sets || []).slice(0, 30).map((s) => {
           const cleanSet = {
-            weightKg: Number(s.weightKg) || 0,
-            reps: Number(s.reps) || 0,
+            weightKg: Math.min(Math.max(Number(s.weightKg) || 0, 0), 1000),
+            reps: Math.min(Math.max(Number(s.reps) || 0, 0), 500),
             completed: Boolean(s.completed)
           };
           if (s.warmup) cleanSet.warmup = true;
-          if (s.notes && s.notes.trim()) cleanSet.notes = s.notes.trim();
+          if (s.notes && s.notes.trim()) cleanSet.notes = sanitizeText(s.notes, 500);
           return cleanSet;
         })
       };
-      if (e.group) cleanEx.group = e.group;
+      if (e.group) cleanEx.group = sanitizeText(e.group, 50);
       return cleanEx;
     })
   };
-  if (w.user_id) clean.user_id = w.user_id;
+  clean.user_id = w.user_id ? String(w.user_id).slice(0, 64) : getActiveProfileId();
   return clean;
 }
 
 export async function pushWorkoutToSupabase(w) {
   try {
     const payload = minifyWorkoutPayload(w);
+    const headers = getRequestHeaders(payload.user_id);
     await fetch(`${SUPABASE_URL}/rest/v1/workouts`, {
       method: "POST",
       headers,
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.warn("Supabase pushWorkout failed:", err);
+    logClientError("pushWorkout", err);
   }
 }
 
-export async function deleteWorkoutFromSupabase(id) {
+export async function deleteWorkoutFromSupabase(id, userId) {
+  if (!id) return;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/workouts?id=eq.${encodeURIComponent(id)}`, {
+    const uid = userId || getActiveProfileId();
+    const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(uid)}`;
+    await fetch(`${SUPABASE_URL}/rest/v1/workouts?${filter}`, {
       method: "DELETE",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
-      }
+      headers: getRequestHeaders(uid)
     });
   } catch (err) {
-    console.warn("Supabase deleteWorkout failed:", err);
+    logClientError("deleteWorkout", err);
   }
 }
 
 export async function pushRoutineToSupabase(r) {
-  // Built-in master routines are permanently bundled locally; only store custom routines in DB
   if (!r || !r.id || r.id.startsWith("ppl-")) return;
 
   try {
+    const pId = r.user_id ? String(r.user_id).slice(0, 64) : getActiveProfileId();
     const payload = {
-      id: r.id,
-      name: r.name ? r.name.trim() : "Custom routine",
-      exercises: (r.exercises || []).map((e) => ({
-        exerciseId: e.exerciseId,
-        exerciseName: e.exerciseName,
-        sets: Number(e.sets) || 3,
-        targetReps: Number(e.targetReps) || 10,
-        targetWeightKg: Number(e.targetWeightKg) || 0,
-        group: e.group || "Main"
+      id: String(r.id).slice(0, 64),
+      name: sanitizeText(r.name, 100) || "Custom routine",
+      user_id: pId,
+      exercises: (r.exercises || []).slice(0, 50).map((e) => ({
+        exerciseId: String(e.exerciseId || "").slice(0, 64),
+        exerciseName: sanitizeText(e.exerciseName, 100),
+        sets: Math.min(Math.max(Number(e.sets) || 3, 1), 30),
+        targetReps: Math.min(Math.max(Number(e.targetReps) || 10, 1), 500),
+        targetWeightKg: Math.min(Math.max(Number(e.targetWeightKg) || 0, 0), 1000),
+        group: sanitizeText(e.group, 50) || "Main"
       }))
     };
-    if (r.user_id) payload.user_id = r.user_id;
     await fetch(`${SUPABASE_URL}/rest/v1/routines`, {
       method: "POST",
-      headers,
+      headers: getRequestHeaders(pId),
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.warn("Supabase pushRoutine failed:", err);
+    logClientError("pushRoutine", err);
   }
 }
 
-export async function deleteRoutineFromSupabase(id) {
+export async function deleteRoutineFromSupabase(id, userId) {
   if (!id || id.startsWith("ppl-")) return;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/routines?id=eq.${encodeURIComponent(id)}`, {
+    const uid = userId || getActiveProfileId();
+    const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(uid)}`;
+    await fetch(`${SUPABASE_URL}/rest/v1/routines?${filter}`, {
       method: "DELETE",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
-      }
+      headers: getRequestHeaders(uid)
     });
   } catch (err) {
-    console.warn("Supabase deleteRoutine failed:", err);
+    logClientError("deleteRoutine", err);
   }
 }
 
 export async function pushCustomExerciseToSupabase(e) {
-  if (!e || e.builtIn) return; // Never store built-in movements
+  if (!e || e.builtIn) return;
   try {
+    const pId = getActiveProfileId();
     const payload = {
-      id: e.id,
-      name: e.name ? e.name.trim() : "",
-      muscle: e.muscle,
-      equipment: e.equipment,
-      movement: e.movement
+      id: String(e.id || "").slice(0, 64),
+      user_id: pId,
+      name: sanitizeText(e.name, 100),
+      muscle: sanitizeText(e.muscle, 50),
+      equipment: sanitizeText(e.equipment, 50),
+      movement: sanitizeText(e.movement, 50)
     };
     await fetch(`${SUPABASE_URL}/rest/v1/custom_exercises`, {
       method: "POST",
-      headers,
+      headers: getRequestHeaders(pId),
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.warn("Supabase pushCustomExercise failed:", err);
+    logClientError("pushCustomExercise", err);
   }
 }
 
-export async function syncAllWithSupabase(localDb, setSyncStatus) {
+export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfileId) {
   try {
     if (setSyncStatus) setSyncStatus("syncing", "Syncing with Supabase...");
+    const profileId = optionalProfileId || getActiveProfileId();
+    const headers = getRequestHeaders(profileId);
 
-    // 1. Sync Workouts (Lean payloads)
+    // 1. Sync Workouts (Scoped to user_id to prevent multi-tenant exposure)
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/workouts?select=*`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/workouts?select=*&user_id=eq.${encodeURIComponent(profileId)}`,
+        { headers }
+      );
       if (res.ok) {
         const remoteWorkouts = await res.json();
-        const localWorkouts = await localDb.workouts.filter((w) => !w.deletedAt).toArray();
+        const localWorkouts = await localDb.workouts
+          .filter((w) => !w.deletedAt && (w.user_id === profileId || (!w.user_id && profileId === DEFAULT_PROFILE_ID)))
+          .toArray();
         const remoteMap = new Map();
         for (const rw of remoteWorkouts) {
           remoteMap.set(rw.id, {
@@ -163,18 +212,19 @@ export async function syncAllWithSupabase(localDb, setSyncStatus) {
         }
       }
     } catch (e) {
-      console.warn("Workout sync sub-step error:", e);
+      logClientError("syncWorkouts", e);
     }
 
-    // 2. Sync Custom Routines only (saves DB space)
+    // 2. Sync Custom Routines (Scoped to user_id or system templates)
     try {
-      const resRoutines = await fetch(`${SUPABASE_URL}/rest/v1/routines?select=*`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
+      const resRoutines = await fetch(
+        `${SUPABASE_URL}/rest/v1/routines?select=*&or=(user_id.eq.${encodeURIComponent(profileId)},user_id.is.null)`,
+        { headers }
+      );
       if (resRoutines.ok) {
         const remoteRoutines = await resRoutines.json();
         const localCustomRoutines = await localDb.routines
-          .filter((r) => !r.deletedAt && !r.id.startsWith("ppl-"))
+          .filter((r) => !r.deletedAt && !r.id.startsWith("ppl-") && (r.user_id === profileId || (!r.user_id && profileId === DEFAULT_PROFILE_ID)))
           .toArray();
         const remoteRMap = new Map();
         for (const rr of remoteRoutines) {
@@ -195,13 +245,13 @@ export async function syncAllWithSupabase(localDb, setSyncStatus) {
         }
       }
     } catch (e) {
-      console.warn("Routine sync sub-step error:", e);
+      logClientError("syncRoutines", e);
     }
 
     if (setSyncStatus) setSyncStatus("synced", "Synced with Supabase");
     return true;
   } catch (err) {
-    console.warn("Supabase syncAll failed:", err);
+    logClientError("syncAll", err);
     if (setSyncStatus) setSyncStatus("local", "Stored locally (Supabase offline)");
     return false;
   }
