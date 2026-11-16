@@ -1,15 +1,6 @@
-// Decoupled React instance reference (prevents circular ESM dependencies)
-let _react = null;
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v10";
 
-export function initNeerajPlanReact(r) {
-  if (r) _react = r;
-}
-
-function getReact() {
-  if (_react) return _react;
-  if (typeof window !== "undefined" && window.__FORGE_REACT__) return window.__FORGE_REACT__;
-  return null;
-}
+export function initNeerajPlanReact() {}
 
 export const DEFAULT_PROFILE_ID = "11111111-1111-4111-a111-111111111111";
 
@@ -1880,8 +1871,7 @@ export async function seedNeerajPplPlan(db) {
  * UI Component: Neeraj Plan Banner on Routines page
  */
 export function NeerajPlanBanner({ onOpenGuide }) {
-  const h = getReact();
-  if (!h) return null;
+  // h is imported directly from index bundle
 
   return h.createElement(
     "div",
@@ -1971,8 +1961,7 @@ export function NeerajPlanBanner({ onOpenGuide }) {
  * UI Component: Pre-Workout Protocol & Exercise Guide Modal
  */
 export function NeerajProtocolModal({ routine, onClose, onStart }) {
-  const h = getReact();
-  if (!h) return null;
+  // h is imported directly from index bundle
 
   const [activeTab, setActiveTab] = h.useState("all");
 
