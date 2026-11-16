@@ -1834,6 +1834,16 @@ export async function seedNeerajPplPlan(db) {
   try {
     if (!db || !db.routines) return;
     
+    // 0. Remove all legacy standard templates (ppl-*)
+    try {
+      const oldRoutines = await db.routines.toArray();
+      for (const r of oldRoutines) {
+        if (r.id && r.id.startsWith("ppl-")) {
+          await db.routines.delete(r.id);
+        }
+      }
+    } catch (_) {}
+    
     // 1. Seed custom catalog exercises with tips & alternatives
     if (db.exercises && NEERAJ_EXERCISES_CATALOG.length) {
       for (const ex of NEERAJ_EXERCISES_CATALOG) {
