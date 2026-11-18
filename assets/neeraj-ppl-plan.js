@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v16";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v17";
 
 export function initNeerajPlanReact() {}
 
@@ -1841,6 +1841,16 @@ export async function seedNeerajPplPlan(db) {
         if (r.id && r.id.startsWith("ppl-")) {
           await db.routines.delete(r.id);
         }
+      }
+    } catch (_) {}
+
+    // 0b. Remove all test workout history
+    try {
+      const purgeKey = "forge_purged_test_workouts_v2";
+      if (!localStorage.getItem(purgeKey) && db.workouts) {
+        await db.workouts.clear();
+        localStorage.setItem(purgeKey, "true");
+        console.log("[FORGE] Cleared test workout history.");
       }
     } catch (_) {}
     
