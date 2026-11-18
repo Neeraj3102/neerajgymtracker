@@ -1,5 +1,5 @@
 /* =========================================================================
-   FORGE Mobile & iOS / Android PWA Enhancements (v13)
+   FORGE Mobile & iOS / Android PWA Enhancements + Desktop Mouse Scroll Fix (v16)
    ========================================================================= */
 
 :root {
@@ -9,12 +9,29 @@
   --sar: env(safe-area-inset-right, 0px);
 }
 
-html, body {
-  overflow-x: hidden;
+/* Ensure root document handles mouse wheel, trackpad, and keyboard scrolling cleanly */
+html {
+  overflow-x: clip !important;
+  overflow-y: auto !important;
+  scroll-behavior: smooth;
   width: 100%;
   -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+  width: 100%;
+  margin: 0;
+  min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
+}
+
+/* Restrict mobile pull-to-refresh containment to touch devices only */
+@media (pointer: coarse) {
+  body {
+    overscroll-behavior-y: contain;
+  }
 }
 
 /* Topbar notch & Dynamic Island protection */
@@ -70,8 +87,8 @@ html, body {
   }
 }
 
-/* Fast tap interaction (eliminates 300ms double-tap delay) */
-button, a, input, select, textarea, .nav-button, .nav-lift, .routine-tile, .card, .workout-card {
+/* Fast tap interaction on interactive controls only (DO NOT apply to cards/tiles to prevent trapping desktop mouse wheel) */
+button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -97,7 +114,7 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .routine-tile, .card
 }
 
 /* =========================================================================
-   QA-Audit Ergonomic Touch Targets & A11y Polish
+   Ergonomic Touch Targets & A11y Polish
    ========================================================================= */
 
 /* Topbar controls touch target expansion (min-height 40px) */
