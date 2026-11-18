@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v14";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v15";
 
 export function initNeerajPlanReact() {}
 
@@ -2375,6 +2375,7 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
   const routine = inputRoutine?.routine || (inputRoutine?.id ? inputRoutine : null);
   const startTab = inputRoutine?.tab || initialTab || "all";
   const [activeTab, setActiveTab] = h.useState(startTab);
+  const [isStarting, setIsStarting] = h.useState(false);
   const [selectedDayKey, setSelectedDayKey] = h.useState(() => {
     if (!routine?.id) return "push";
     const rid = String(routine.id).toLowerCase();
@@ -2384,6 +2385,17 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
     return "push";
   });
   const [checkedItems, setCheckedItems] = h.useState({});
+
+  // Global Escape key listener for keyboard accessibility
+  h.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const toggleCheck = (itemId) => {
     setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -2396,10 +2408,13 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
 
   return h.createElement(
     "div",
-    { className: "modal-backdrop", onClick: onClose },
+    { className: "modal-backdrop", role: "presentation", onClick: onClose },
     h.createElement(
       "div",
       {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": "neeraj-protocol-modal-title",
         className: "form-modal neeraj-protocol-modal",
         onClick: (e) => e.stopPropagation(),
         style: {
@@ -2442,6 +2457,7 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
             }, dayProto.badge)
           ),
           h.createElement("h2", {
+            id: "neeraj-protocol-modal-title",
             style: { margin: "2px 0 6px", fontSize: "19px", fontWeight: 800, color: "#fff" }
           }, routineName),
           h.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } },
@@ -2460,6 +2476,7 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
           "button",
           {
             className: "icon-button",
+            "aria-label": "Close protocol guide",
             onClick: onClose,
             style: {
               background: "transparent",
@@ -2467,7 +2484,12 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
               color: "#9ca3af",
               fontSize: "20px",
               cursor: "pointer",
-              padding: "4px 8px"
+              padding: "8px 12px",
+              minHeight: "44px",
+              minWidth: "44px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center"
             }
           },
           "✕"
@@ -2855,13 +2877,22 @@ export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all",
           "button",
           {
             className: "primary-button",
+            disabled: isStarting,
             onClick: () => {
+              if (isStarting) return;
+              setIsStarting(true);
               onClose();
               onStart(routine);
             },
-            style: { padding: "8px 20px", fontWeight: 800 }
+            style: {
+              padding: "10px 22px",
+              minHeight: "44px",
+              fontWeight: 800,
+              opacity: isStarting ? 0.6 : 1,
+              cursor: isStarting ? "not-allowed" : "pointer"
+            }
           },
-          "🚀 Start This Workout"
+          isStarting ? "⏳ Starting..." : "🚀 Start This Workout"
         )
       )
     )

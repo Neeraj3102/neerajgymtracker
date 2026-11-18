@@ -175,6 +175,9 @@ export async function pushCustomExerciseToSupabase(e) {
 
 export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfileId) {
   try {
+    if (typeof window !== "undefined") {
+      window.__FORGE_SYNC_ALL__ = () => syncAllWithSupabase(localDb, setSyncStatus, optionalProfileId);
+    }
     if (setSyncStatus) setSyncStatus("syncing", "Syncing with Supabase...");
     const profileId = optionalProfileId || getActiveProfileId();
     const headers = getRequestHeaders(profileId);
@@ -255,4 +258,15 @@ export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfil
     if (setSyncStatus) setSyncStatus("local", "Stored locally (Supabase offline)");
     return false;
   }
+}
+
+// Auto-resync when network connection is restored
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    try {
+      if (typeof window.__FORGE_SYNC_ALL__ === "function") {
+        window.__FORGE_SYNC_ALL__();
+      }
+    } catch (_) {}
+  });
 }

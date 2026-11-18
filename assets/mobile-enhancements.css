@@ -95,3 +95,43 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .routine-tile, .card
 .toast {
   bottom: calc(96px + var(--sab)) !important;
 }
+
+/* =========================================================================
+   QA-Audit Ergonomic Touch Targets & A11y Polish
+   ========================================================================= */
+
+/* Topbar controls touch target expansion (min-height 40px) */
+.topbar button, .topbar .icon-button, .rest-timer-pill {
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Routine protocol action pills */
+.routine-protocol-pills {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.routine-protocol-pills button {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  touch-action: manipulation !important;
+  border-radius: 8px !important;
+}
+
+@media (max-width: 640px) {
+  .routine-protocol-pills button {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+  }
+  
+  /* Modal navigation buttons touch clearance */
+  .neeraj-protocol-modal button {
+    min-height: 40px !important;
+  }
+}
