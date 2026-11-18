@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v17";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v18";
 
 export function initNeerajPlanReact() {}
 
@@ -1844,15 +1844,7 @@ export async function seedNeerajPplPlan(db) {
       }
     } catch (_) {}
 
-    // 0b. Remove all test workout history
-    try {
-      const purgeKey = "forge_purged_test_workouts_v2";
-      if (!localStorage.getItem(purgeKey) && db.workouts) {
-        await db.workouts.clear();
-        localStorage.setItem(purgeKey, "true");
-        console.log("[FORGE] Cleared test workout history.");
-      }
-    } catch (_) {}
+
     
     // 1. Seed custom catalog exercises with tips & alternatives
     if (db.exercises && NEERAJ_EXERCISES_CATALOG.length) {

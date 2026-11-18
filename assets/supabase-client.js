@@ -182,6 +182,21 @@ export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfil
     const profileId = optionalProfileId || getActiveProfileId();
     const headers = getRequestHeaders(profileId);
 
+    // One-time test workout purge: clear local Dexie workouts & delete Supabase test workouts
+    const purgeKey = "forge_purged_test_workouts_v3";
+    if (!localStorage.getItem(purgeKey)) {
+      try {
+        if (localDb && localDb.workouts) {
+          await localDb.workouts.clear();
+        }
+        localStorage.setItem(purgeKey, "true");
+        await fetch(`${SUPABASE_URL}/rest/v1/workouts?user_id=eq.${encodeURIComponent(profileId)}`, {
+          method: "DELETE",
+          headers
+        });
+      } catch (_) {}
+    }
+
     // 1. Sync Workouts (Scoped to user_id to prevent multi-tenant exposure)
     try {
       const res = await fetch(
