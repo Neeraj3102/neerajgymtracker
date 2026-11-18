@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v13";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v14";
 
 export function initNeerajPlanReact() {}
 
@@ -1880,9 +1880,348 @@ export async function seedNeerajPplPlan(db) {
 /**
  * UI Component: Neeraj Plan Banner on Routines page
  */
-export function NeerajPlanBanner({ onOpenGuide }) {
-  // h is imported directly from index bundle
+/**
+ * Day-Specific Protocol Definitions for Push, Pull, Legs & Rest Days
+ * Tailored with Right Shoulder Elevation cues and Anterior Pelvic Tilt (APT) fixes.
+ */
+export const DAY_PROTOCOLS = {
+  push: {
+    key: "push",
+    name: "Push Day Protocol (Chest, Shoulders & Triceps)",
+    badge: "SCAPULAR DEPRESSION & RIGHT TRAP INHIBITION",
+    accent: "#84cc16",
+    warmup: [
+      {
+        id: "push-w1",
+        title: "Cardio Warm-Up",
+        time: "3 mins",
+        text: "Stairmaster, Incline Treadmill or Elliptical to elevate core temperature and lubricate shoulder and elbow joints."
+      },
+      {
+        id: "push-w2",
+        title: "Right Upper Trap Release (Neck Side Stretch)",
+        time: "30s per side",
+        badge: "SHOULDER ASYMMETRY",
+        text: "Gently tilt head to the left while actively reaching your right fingertips toward the floor. This depresses the right scapula and inhibits the overactive right upper trap before pressing."
+      },
+      {
+        id: "push-w3",
+        title: "Scapular Push-Ups / Prone Y-Raises",
+        time: "10-12 reps",
+        text: "On floor or 30° incline bench. Squeeze shoulder blades together, then push through hands to spread shoulder blades apart. Activates serratus anterior and lower trapezius to lock shoulders in back pockets."
+      },
+      {
+        id: "push-w4",
+        title: "Dynamic Arm Swings & Rotator Cuff Swings",
+        time: "15 reps",
+        text: "Horizontal hugs and forward/backward arm circles to mobilize anterior deltoids and pectoral tendons."
+      },
+      {
+        id: "push-w5",
+        title: "Feeder Set at 50% Working Weight",
+        time: "1 set of 5 reps",
+        text: "Perform on Incline DB Bench Press at half your working weight with a strict 3-second negative descent before starting working sets."
+      }
+    ],
+    cooldown: [
+      {
+        id: "push-c1",
+        title: "Pull-Up Bar Dead Hang (Spinal Decompression)",
+        time: "2 x 30s",
+        text: "Full bodyweight hang with relaxed breathing. Decompresses intervertebral discs compressed during overhead and incline presses."
+      },
+      {
+        id: "push-c2",
+        title: "Doorway Pectoral & Front Shoulder Stretch",
+        time: "45s per side",
+        text: "Place forearm against doorframe at 90°. Gently step through until feeling deep chest opening without hiking right shoulder."
+      },
+      {
+        id: "push-c3",
+        title: "Overhead Triceps & Lat Stretch",
+        time: "30s per side",
+        text: "Reach elbow behind head, pull gently with opposite hand. Keep torso upright and ribs tucked down."
+      },
+      {
+        id: "push-c4",
+        title: "Child's Pose into Cobra Stretch",
+        time: "60s deep breathing",
+        text: "Transition smoothly from child's pose to cobra, releasing spinal erectors and front abdominal wall."
+      }
+    ]
+  },
+  pull: {
+    key: "pull",
+    name: "Pull Day Protocol (Back, Lats, Traps & Biceps)",
+    badge: "LAT ACTIVATION & SCAPULAR RETRACTION",
+    accent: "#60a5fa",
+    warmup: [
+      {
+        id: "pull-w1",
+        title: "Cardio Warm-Up",
+        time: "3 mins",
+        text: "Rower or Elliptical to warm up back musculature, biceps, and posterior chain."
+      },
+      {
+        id: "pull-w2",
+        title: "Active Scapular Hangs / Lat Pre-Activation",
+        time: "2 x 10s",
+        badge: "SCAPULAR PULL",
+        text: "Hang from pull-up bar with arms straight. Pull shoulder blades DOWN into your back pockets without bending elbows. Feel lower lats engage first."
+      },
+      {
+        id: "pull-w3",
+        title: "Band Pull-Aparts or Light Face Pulls",
+        time: "15 reps",
+        text: "Hold band at shoulder height. Pull apart horizontally, squeezing rhomboids and rear delts at peak contraction."
+      },
+      {
+        id: "pull-w4",
+        title: "Dynamic Arm Swings & Torso Twists",
+        time: "15 reps",
+        text: "Smooth controlled torso rotations and arm swings to mobilize thoracic spine."
+      },
+      {
+        id: "pull-w5",
+        title: "Feeder Set at 50% Working Weight",
+        time: "1 set of 5 reps",
+        text: "Perform on Lat Pulldown or Single-Arm Row at 50% weight with focus on pulling right elbow into ribs."
+      }
+    ],
+    cooldown: [
+      {
+        id: "pull-c1",
+        title: "Pull-Up Bar Dead Hang (Spinal Decompression)",
+        time: "2 x 30s",
+        text: "Full bodyweight hang with relaxed breathing to decompress spine and relieve lat tension."
+      },
+      {
+        id: "pull-c2",
+        title: "Single-Arm Lat Stretch on Upright Rack/Post",
+        time: "45s per side",
+        text: "Grab a post at hip height, sit hips back, let lat stretch from armpit down to hip."
+      },
+      {
+        id: "pull-c3",
+        title: "Kneeling Bicep & Forearm Stretch",
+        time: "30s per side",
+        text: "Palms on floor with fingers pointing back toward knees. Gently lean back to stretch biceps and wrist flexors."
+      },
+      {
+        id: "pull-c4",
+        title: "Child's Pose Walking Hands Left & Right",
+        time: "60s",
+        text: "In child's pose, walk hands to far left for 30s (deep right lat stretch), then far right for 30s."
+      }
+    ]
+  },
+  legs: {
+    key: "legs",
+    name: "Leg Day Protocol (Quads, Hamstrings & Calves)",
+    badge: "ANTERIOR PELVIC TILT (APT) & GLUTE ACTIVATION",
+    accent: "#f59e0b",
+    warmup: [
+      {
+        id: "legs-w1",
+        title: "Cardio Warm-Up",
+        time: "3 mins",
+        text: "Stationary Bike or Stairmaster to circulate synovial fluid in knees and hips."
+      },
+      {
+        id: "legs-w2",
+        title: "Half-Kneeling Hip Flexor Stretch (Posterior Pelvic Tilt)",
+        time: "45s per side",
+        badge: "APT FIX #1",
+        text: "Kneel on right knee. Crucial: Actively tuck your tailbone under (posterior tilt, flattening lower back) and squeeze your right glute as hard as possible. Gently shift forward 1-2 inches. Do NOT arch lower back."
+      },
+      {
+        id: "legs-w3",
+        title: "Glute Bridges with Posterior Pelvic Tilt",
+        time: "12 reps (2s hold)",
+        badge: "APT FIX #2",
+        text: "Lie on back, feet flat. Flatten lower back into floor. Drive through heels, squeeze glutes at the top for 2 seconds. Re-awakens dormant glutes that cause pelvic anterior tilting."
+      },
+      {
+        id: "legs-w4",
+        title: "Dead Bugs (Deep Core & Transverse Abdominis)",
+        time: "10 reps per side",
+        badge: "APT FIX #3",
+        text: "Lie on back with arms straight up and knees at 90°. Press lumbar spine flat into floor with zero gap. Slowly extend opposite arm and leg while maintaining flat back brace."
+      },
+      {
+        id: "legs-w5",
+        title: "Dynamic Leg Swings (Front/Back & Side-to-Side)",
+        time: "15 reps per leg",
+        text: "Swing leg in full controlled range of motion to mobilize hip capsule and hamstrings."
+      },
+      {
+        id: "legs-w6",
+        title: "Feeder Set at 50% Working Weight",
+        time: "1 set of 5 reps",
+        text: "Perform on 45° Leg Press or Romanian Deadlift with slow 3-second negative descent."
+      }
+    ],
+    cooldown: [
+      {
+        id: "legs-c1",
+        title: "Pull-Up Bar Dead Hang (Spinal Decompression)",
+        time: "2 x 30s",
+        text: "Decompresses lumbar spine heavily loaded from Leg Press, RDLs, or Hack Squats."
+      },
+      {
+        id: "legs-c2",
+        title: "Deep Couch / Wall Hip Flexor Stretch",
+        time: "45s per side",
+        badge: "APT FIX #4",
+        text: "Back knee against a wall or bench, front foot planted. Torso upright. Squeeze rear glute forward. Directly targets the shortened psoas and rectus femoris responsible for anterior pelvic tilt."
+      },
+      {
+        id: "legs-c3",
+        title: "Standing Calf & Hamstring Stretch against Wall",
+        time: "45s per side",
+        text: "Toes elevated on plate or wall edge, heel on floor. Hips pushed back gently."
+      },
+      {
+        id: "legs-c4",
+        title: "Prone Cobra / Sphinx Stretch (Abdominal Wall & Hip Opener)",
+        time: "60s deep breathing",
+        text: "Lie face down, press up onto forearms/palms while keeping hips glued to floor. Breathe deeply into abdomen."
+      }
+    ]
+  },
+  rest: {
+    key: "rest",
+    name: "Day 7 — Posture Restoration & APT Recovery",
+    badge: "FULL POSTURE & PELVIC RESTORATION",
+    accent: "#a855f7",
+    warmup: [
+      {
+        id: "rest-w1",
+        title: "Gentle Incline Walk or Bike",
+        time: "5 mins",
+        text: "Gentle low-intensity blood flow to aid recovery."
+      },
+      {
+        id: "rest-w2",
+        title: "Cat-Cow Pelvic Tilt Mobilization",
+        time: "10 slow cycles",
+        badge: "APT MOBILITY",
+        text: "On all fours. Inhale, drop belly into anterior tilt (Cow). Exhale, round spine into maximum posterior pelvic tilt (Cat), tucking tailbone under."
+      }
+    ],
+    cooldown: [
+      {
+        id: "rest-c1",
+        title: "Spinal Decompression Dead Hang",
+        time: "3 x 30s",
+        text: "Decompresses spinal discs and opens shoulder girdle."
+      },
+      {
+        id: "rest-c2",
+        title: "Half-Kneeling Hip Flexor Stretch with Posterior Tilt",
+        time: "3 x 45s per side",
+        badge: "APT FIX",
+        text: "Tuck pelvis under, squeeze rear glute tightly. Lengthens chronic hip flexor tightness from sitting."
+      },
+      {
+        id: "rest-c3",
+        title: "Glute Bridges with 3-Second Isometric Hold",
+        time: "3 x 12 reps",
+        badge: "APT FIX",
+        text: "Strengthens gluteus maximus to restore neutral pelvis angle."
+      },
+      {
+        id: "rest-c4",
+        title: "Dead Bugs with Flat Lumbar Spine",
+        time: "3 x 10 reps per side",
+        badge: "APT FIX",
+        text: "Deep abdominal bracing to prevent lower back hyperextension."
+      },
+      {
+        id: "rest-c5",
+        title: "Right Upper Trap Release & Scapular Wall Slides",
+        time: "3 x 10 reps",
+        badge: "SHOULDER FIX",
+        text: "Stand against wall with arms at 90°. Slide arms up while keeping right trap relaxed and lower traps engaged."
+      },
+      {
+        id: "rest-c6",
+        title: "Deep Diaphragmatic Child's Pose",
+        time: "2 mins",
+        text: "Full relaxation of spinal erectors and parasympathetic nervous system recovery."
+      }
+    ]
+  }
+};
 
+/**
+ * Detailed Anterior Pelvic Tilt (APT) Scientific Protocol
+ */
+export const APT_CLINICAL_GUIDE = [
+  {
+    number: "01",
+    name: "Half-Kneeling Hip Flexor Stretch (with Posterior Pelvic Tilt)",
+    target: "Psoas Major & Rectus Femoris (Inhibit / Lengthen)",
+    dose: "3 sets x 45 seconds per side",
+    why: "Tight hip flexors pull the front of the pelvis down, creating excessive lumbar lordosis and an anterior tilt.",
+    cues: [
+      "Kneel on one knee with front foot at 90 degrees.",
+      "Crucial Pelvic Cue: Imagine your pelvis is a bucket of water. Tuck your tailbone under like a dog tucking its tail, spilling water out the back.",
+      "Glute Squeeze: Squeeze the glute on the kneeling leg at 100% effort.",
+      "Shift forward only 1-2 inches. If you lose the glute squeeze or arch your lower back, you lose the stretch on the psoas."
+    ]
+  },
+  {
+    number: "02",
+    name: "Glute Bridge with Posterior Pelvic Tilt & Hold",
+    target: "Gluteus Maximus & Hip Extensors (Activate / Strengthen)",
+    dose: "3 sets x 12 reps (2-second isometric peak hold)",
+    why: "In APT, reciprocal inhibition leaves the glutes neurologically dormant, forcing the lower back and hamstrings to overwork.",
+    cues: [
+      "Lie on back, feet flat and shoulder-width apart.",
+      "Before lifting, flatten your lower back completely into the floor (zero daylight).",
+      "Drive through your heels, lifting hips until torso and thighs form a straight ramp.",
+      "Squeeze glutes maximally for 2 full seconds at the top. Do not arch into lower back."
+    ]
+  },
+  {
+    number: "03",
+    name: "Dead Bugs (Deep Lumbar & Pelvic Control)",
+    target: "Transverse Abdominis & Deep Core (Stabilize)",
+    dose: "3 sets x 10 reps per side (controlled tempo)",
+    why: "Builds the anterior abdominal wall tension needed to keep the pelvis level during walking and standing.",
+    cues: [
+      "Lie on back with arms straight up and knees at 90 degrees.",
+      "Exhale and press your lower back firmly into the floor. Lock it down.",
+      "Slowly lower right arm overhead while extending left leg out. Keep lower back glued to floor.",
+      "Return and alternate sides. If your lower back pops up even 1mm, reduce leg extension distance."
+    ]
+  },
+  {
+    number: "04",
+    name: "Couch Stretch / Wall Hip Flexor Mobilization",
+    target: "Deep Psoas, Iliacus & Quadriceps (Deep Decompression)",
+    dose: "2 sets x 45-60 seconds per side",
+    why: "The gold-standard mobility drill to reverse hours of seated hip flexion.",
+    cues: [
+      "Place back knee tight into the corner of a wall or couch, shin pointing up the wall.",
+      "Step front foot forward into a lunge.",
+      "Bring torso tall and upright while keeping rear glute clenched tight forward.",
+      "Take slow, deep diaphragmatic breaths to downregulate hip flexor tightness."
+    ]
+  }
+];
+
+export function getProtocolForRoutine(routineId = "") {
+  const rid = String(routineId).toLowerCase();
+  if (rid.includes("push")) return DAY_PROTOCOLS.push;
+  if (rid.includes("pull")) return DAY_PROTOCOLS.pull;
+  if (rid.includes("legs")) return DAY_PROTOCOLS.legs;
+  if (rid.includes("rest")) return DAY_PROTOCOLS.rest;
+  return DAY_PROTOCOLS.push;
+}
+
+export function NeerajPlanBanner({ onOpenGuide }) {
   return h.createElement(
     "div",
     {
@@ -1904,7 +2243,7 @@ export function NeerajPlanBanner({ onOpenGuide }) {
         null,
         h.createElement(
           "div",
-          { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" } },
+          { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" } },
           h.createElement("span", {
             style: {
               background: "rgba(132, 204, 22, 0.15)",
@@ -1928,7 +2267,19 @@ export function NeerajPlanBanner({ onOpenGuide }) {
               letterSpacing: "0.08em",
               textTransform: "uppercase"
             }
-          }, "ASYMMETRY CORRECTED")
+          }, "ASYMMETRY CORRECTED"),
+          h.createElement("span", {
+            style: {
+              background: "rgba(234, 179, 8, 0.15)",
+              color: "#facc15",
+              padding: "2px 8px",
+              borderRadius: "4px",
+              fontSize: "10px",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase"
+            }
+          }, "APT CORRECTED")
         ),
         h.createElement("h3", {
           style: {
@@ -1946,22 +2297,72 @@ export function NeerajPlanBanner({ onOpenGuide }) {
             maxWidth: "600px",
             lineHeight: 1.4
           }
-        }, "Right shoulder elevation correction with strict unilateral dumbbell focus, scapular depression cues, and dynamic 2-set editable volume.")
+        }, "Scapular depression for right shoulder elevation, anterior pelvic tilt correction for hips, and dedicated Pre & Post workout protocols for each day.")
       ),
       h.createElement(
-        "button",
-        {
-          className: "outline-button",
-          onClick: onOpenGuide,
-          style: {
-            borderColor: "#84cc16",
-            color: "#84cc16",
-            fontWeight: 700,
-            fontSize: "12px",
-            padding: "8px 14px"
-          }
-        },
-        "📋 View Full Protocols & Tips"
+        "div",
+        { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
+        h.createElement(
+          "button",
+          {
+            className: "outline-button",
+            onClick: () => onOpenGuide && onOpenGuide({ tab: "warmup" }),
+            style: {
+              borderColor: "rgba(132,204,22,0.5)",
+              color: "#84cc16",
+              fontWeight: 700,
+              fontSize: "12px",
+              padding: "7px 12px",
+              background: "rgba(132,204,22,0.08)"
+            }
+          },
+          "🔥 Pre-Workout"
+        ),
+        h.createElement(
+          "button",
+          {
+            className: "outline-button",
+            onClick: () => onOpenGuide && onOpenGuide({ tab: "cooldown" }),
+            style: {
+              borderColor: "rgba(56,189,248,0.5)",
+              color: "#38bdf8",
+              fontWeight: 700,
+              fontSize: "12px",
+              padding: "7px 12px",
+              background: "rgba(56,189,248,0.08)"
+            }
+          },
+          "🧘 Post-Workout"
+        ),
+        h.createElement(
+          "button",
+          {
+            className: "outline-button",
+            onClick: () => onOpenGuide && onOpenGuide({ tab: "apt" }),
+            style: {
+              borderColor: "rgba(250,204,21,0.5)",
+              color: "#facc15",
+              fontWeight: 700,
+              fontSize: "12px",
+              padding: "7px 12px",
+              background: "rgba(250,204,21,0.08)"
+            }
+          },
+          "🦴 APT Guide"
+        ),
+        h.createElement(
+          "button",
+          {
+            className: "primary-button",
+            onClick: () => onOpenGuide && onOpenGuide({ tab: "all" }),
+            style: {
+              fontWeight: 800,
+              fontSize: "12px",
+              padding: "7px 14px"
+            }
+          },
+          "📋 Full Overview"
+        )
       )
     )
   );
@@ -1970,13 +2371,28 @@ export function NeerajPlanBanner({ onOpenGuide }) {
 /**
  * UI Component: Pre-Workout Protocol & Exercise Guide Modal
  */
-export function NeerajProtocolModal({ routine, onClose, onStart }) {
-  // h is imported directly from index bundle
+export function NeerajProtocolModal({ routine: inputRoutine, initialTab = "all", onClose, onStart }) {
+  const routine = inputRoutine?.routine || (inputRoutine?.id ? inputRoutine : null);
+  const startTab = inputRoutine?.tab || initialTab || "all";
+  const [activeTab, setActiveTab] = h.useState(startTab);
+  const [selectedDayKey, setSelectedDayKey] = h.useState(() => {
+    if (!routine?.id) return "push";
+    const rid = String(routine.id).toLowerCase();
+    if (rid.includes("pull")) return "pull";
+    if (rid.includes("legs")) return "legs";
+    if (rid.includes("rest")) return "rest";
+    return "push";
+  });
+  const [checkedItems, setCheckedItems] = h.useState({});
 
-  const [activeTab, setActiveTab] = h.useState("all");
+  const toggleCheck = (itemId) => {
+    setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
 
+  const dayProto = DAY_PROTOCOLS[selectedDayKey] || DAY_PROTOCOLS.push;
   const exercises = routine?.exercises || [];
-  const routineName = routine?.name || "Beginner 6-Day PPL";
+  const routineName = routine?.name || dayProto.name;
+  const isLegsOrRest = selectedDayKey === "legs" || selectedDayKey === "rest";
 
   return h.createElement(
     "div",
@@ -1987,15 +2403,15 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
         className: "form-modal neeraj-protocol-modal",
         onClick: (e) => e.stopPropagation(),
         style: {
-          maxWidth: "760px",
+          maxWidth: "800px",
           width: "95vw",
-          maxHeight: "90vh",
+          maxHeight: "92vh",
           overflowY: "auto",
           background: "#0d0f0e",
           border: "1px solid #232724",
           borderRadius: "16px",
-          padding: "24px",
-          boxShadow: "0 20px 50px rgba(0,0,0,0.8)"
+          padding: "22px",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.85)"
         }
       },
       // Modal Header
@@ -2007,32 +2423,37 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
             justifyContent: "space-between",
             alignItems: "flex-start",
             borderBottom: "1px solid #1f2420",
-            paddingBottom: "16px",
-            marginBottom: "18px"
+            paddingBottom: "14px",
+            marginBottom: "14px"
           }
         },
         h.createElement(
           "div",
           null,
-          h.createElement("span", {
-            style: {
-              fontSize: "11px",
-              color: "#84cc16",
-              fontWeight: 800,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase"
-            }
-          }, "NEERAJ PROTOCOL & EXERCISE GUIDE"),
+          h.createElement("div", { style: { display: "flex", gap: "6px", alignItems: "center", marginBottom: "4px" } },
+            h.createElement("span", {
+              style: {
+                fontSize: "10px",
+                color: dayProto.accent,
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase"
+              }
+            }, dayProto.badge)
+          ),
           h.createElement("h2", {
-            style: { margin: "4px 0 6px", fontSize: "20px", fontWeight: 800, color: "#fff" }
+            style: { margin: "2px 0 6px", fontSize: "19px", fontWeight: 800, color: "#fff" }
           }, routineName),
-          h.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
+          h.createElement("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } },
             h.createElement("span", {
-              style: { background: "rgba(132,204,22,0.12)", color: "#84cc16", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700 }
-            }, "2 Sets Recommended (Fully Editable)"),
+              style: { background: "rgba(132,204,22,0.12)", color: "#84cc16", padding: "2px 7px", borderRadius: "4px", fontSize: "11px", fontWeight: 700 }
+            }, "2 Sets Dynamic Volume"),
             h.createElement("span", {
-              style: { background: "rgba(59,130,246,0.12)", color: "#60a5fa", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 700 }
-            }, "Right Scapular Depression Focus")
+              style: { background: "rgba(59,130,246,0.12)", color: "#60a5fa", padding: "2px 7px", borderRadius: "4px", fontSize: "11px", fontWeight: 700 }
+            }, "Right Shoulder Depression Cues"),
+            h.createElement("span", {
+              style: { background: "rgba(234,179,8,0.14)", color: "#facc15", padding: "2px 7px", borderRadius: "4px", fontSize: "11px", fontWeight: 700 }
+            }, "🦴 Anterior Pelvic Tilt (APT) Fix")
           )
         ),
         h.createElement(
@@ -2045,40 +2466,61 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
               border: 0,
               color: "#9ca3af",
               fontSize: "20px",
-              cursor: "pointer"
+              cursor: "pointer",
+              padding: "4px 8px"
             }
           },
           "✕"
         )
       ),
 
-      // Scapular Asymmetry Callout Box
-      h.createElement(
-        "div",
-        {
-          style: {
-            background: "rgba(234, 179, 8, 0.08)",
-            border: "1px solid rgba(234, 179, 8, 0.35)",
-            borderRadius: "10px",
-            padding: "12px 16px",
-            marginBottom: "18px"
-          }
-        },
-        h.createElement("strong", { style: { color: "#facc15", display: "block", fontSize: "12px", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.05em" } },
-          "🛡️ Scapular & Posture Alert — Right Shoulder Elevation Correction"
-        ),
-        h.createElement("p", { style: { margin: 0, fontSize: "12px", color: "#d1d5db", lineHeight: 1.45 } },
-          "Keep shoulder blades tucked down into your back pockets before every pressing and pulling set. Prevent your right upper trapezius from hiking upward. Emphasize unilateral dumbbell freedom and scapular plane angles (30° forward)."
-        )
-      ),
-
-      // Navigation Tabs
+      // Day Selector (Push / Pull / Legs / Rest)
       h.createElement(
         "div",
         {
           style: {
             display: "flex",
-            gap: "8px",
+            gap: "6px",
+            marginBottom: "12px",
+            overflowX: "auto",
+            paddingBottom: "4px"
+          }
+        },
+        [
+          { id: "push", label: "Push Day", icon: "🔥", color: "#84cc16" },
+          { id: "pull", label: "Pull Day", icon: "⚡", color: "#60a5fa" },
+          { id: "legs", label: "Legs Day (APT)", icon: "🦵", color: "#f59e0b" },
+          { id: "rest", label: "Day 7 Rest (Posture)", icon: "🧘", color: "#a855f7" }
+        ].map(d =>
+          h.createElement(
+            "button",
+            {
+              key: d.id,
+              onClick: () => setSelectedDayKey(d.id),
+              style: {
+                background: selectedDayKey === d.id ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.03)",
+                color: selectedDayKey === d.id ? d.color : "#9ca3af",
+                border: "1px solid " + (selectedDayKey === d.id ? d.color : "rgba(255,255,255,0.08)"),
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap"
+              }
+            },
+            d.icon + " " + d.label
+          )
+        )
+      ),
+
+      // Navigation Tabs (All, Pre-Workout, Exercises, Post-Workout, APT)
+      h.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            gap: "6px",
             borderBottom: "1px solid #1f2420",
             paddingBottom: "10px",
             marginBottom: "16px",
@@ -2086,25 +2528,27 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
           }
         },
         [
-          { id: "all", label: "Full Workout Overview" },
-          { id: "warmup", label: "Pre-Workout Warm-Up" },
-          { id: "exercises", label: "Exercises & Form Tips" },
-          { id: "cooldown", label: "Cool-Down & Core" }
-        ].map((tab) =>
+          { id: "all", label: "Full Overview", color: "#d1d5db" },
+          { id: "warmup", label: "🔥 Pre-Workout (" + dayProto.warmup.length + ")", color: "#84cc16" },
+          exercises.length > 0 && { id: "exercises", label: "⚡ Exercises (" + exercises.length + ")", color: "#60a5fa" },
+          { id: "cooldown", label: "🧘 Post-Workout (" + dayProto.cooldown.length + ")", color: "#38bdf8" },
+          { id: "apt", label: "🦴 Anterior Pelvic Tilt (APT)", color: "#facc15" }
+        ].filter(Boolean).map((tab) =>
           h.createElement(
             "button",
             {
               key: tab.id,
               onClick: () => setActiveTab(tab.id),
               style: {
-                background: activeTab === tab.id ? "#84cc16" : "rgba(255,255,255,0.05)",
+                background: activeTab === tab.id ? tab.color : "rgba(255,255,255,0.04)",
                 color: activeTab === tab.id ? "#000" : "#d1d5db",
                 border: "none",
                 borderRadius: "6px",
                 padding: "6px 12px",
                 fontSize: "12px",
                 fontWeight: 700,
-                cursor: "pointer"
+                cursor: "pointer",
+                whiteSpace: "nowrap"
               }
             },
             tab.label
@@ -2112,27 +2556,92 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
         )
       ),
 
-      // Tab Content: Warm-Up
+      // TAB: PRE-WORKOUT WARM-UP (Day-Specific)
       (activeTab === "all" || activeTab === "warmup") &&
         h.createElement(
           "div",
-          { style: { marginBottom: "20px", background: "#111412", padding: "14px", borderRadius: "10px", border: "1px solid #1f2420" } },
-          h.createElement("h4", { style: { margin: "0 0 10px", color: "#84cc16", fontSize: "13px", letterSpacing: "0.05em" } }, "⏱️ PRE-WORKOUT WARM-UP (8–10 MINS)"),
-          h.createElement("ol", { style: { margin: 0, paddingLeft: "18px", color: "#d1d5db", fontSize: "12px", lineHeight: 1.6 } },
-            h.createElement("li", null, "3 mins cardio (Stairmaster or Elliptical) to elevate core temperature."),
-            h.createElement("li", null, "Right Upper Trap Release: 30s gentle neck stretch to the left (reach right fingertips to floor)."),
-            h.createElement("li", null, "Prone Incline Y-Raises: 10 unweighted reps (focus on lower trapezius pulling right shoulder blade down)."),
-            h.createElement("li", null, "Dynamic Arm Swings & Leg Swings (15 reps each)."),
-            h.createElement("li", null, "1 warmup feeder set at 50% working weight before first compound movement.")
+          { style: { marginBottom: "18px", background: "#111412", padding: "16px", borderRadius: "12px", border: "1px solid rgba(132, 204, 22, 0.25)" } },
+          h.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "6px" } },
+            h.createElement("h4", { style: { margin: 0, color: "#84cc16", fontSize: "14px", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" } },
+              "🔥 " + dayProto.name + " — Pre-Workout Warm-Up"
+            ),
+            h.createElement("span", { style: { background: "rgba(132,204,22,0.15)", color: "#84cc16", fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "4px" } },
+              "8–10 MINS • TAP TO CHECK"
+            )
+          ),
+          h.createElement(
+            "div",
+            { style: { display: "grid", gap: "10px" } },
+            dayProto.warmup.map((step, idx) => {
+              const isChecked = !!checkedItems[step.id];
+              return h.createElement(
+                "div",
+                {
+                  key: step.id || idx,
+                  onClick: () => toggleCheck(step.id),
+                  style: {
+                    background: isChecked ? "rgba(132,204,22,0.06)" : "rgba(255,255,255,0.02)",
+                    border: "1px solid " + (isChecked ? "rgba(132,204,22,0.4)" : "#1f2420"),
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    opacity: isChecked ? 0.75 : 1
+                  }
+                },
+                h.createElement(
+                  "div",
+                  { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", gap: "8px" } },
+                  h.createElement("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
+                    h.createElement("span", {
+                      style: {
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "4px",
+                        border: "1px solid " + (isChecked ? "#84cc16" : "#4b5563"),
+                        background: isChecked ? "#84cc16" : "transparent",
+                        color: "#000",
+                        fontSize: "12px",
+                        fontWeight: 900
+                      }
+                    }, isChecked ? "✓" : ""),
+                    h.createElement("strong", {
+                      style: {
+                        color: isChecked ? "#84cc16" : "#f3f4f6",
+                        fontSize: "13px",
+                        textDecoration: isChecked ? "line-through" : "none"
+                      }
+                    }, (idx + 1) + ". " + step.title)
+                  ),
+                  h.createElement("span", {
+                    style: {
+                      color: step.badge ? "#facc15" : "#84cc16",
+                      background: step.badge ? "rgba(234,179,8,0.15)" : "rgba(132,204,22,0.1)",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      whiteSpace: "nowrap"
+                    }
+                  }, step.badge || step.time)
+                ),
+                h.createElement("p", { style: { margin: "4px 0 0 26px", color: isChecked ? "#6b7280" : "#9ca3af", fontSize: "12px", lineHeight: 1.45 } }, step.text)
+              );
+            })
           )
         ),
 
-      // Tab Content: Exercises & Form Tips
-      (activeTab === "all" || activeTab === "exercises") &&
+      // TAB: EXERCISES & FORM TIPS
+      exercises.length > 0 && (activeTab === "all" || activeTab === "exercises") &&
         h.createElement(
           "div",
-          { style: { marginBottom: "20px" } },
-          h.createElement("h4", { style: { margin: "0 0 12px", color: "#60a5fa", fontSize: "13px", letterSpacing: "0.05em" } }, "💪 EXERCISE CATALOG & FORM CUES"),
+          { style: { marginBottom: "18px" } },
+          h.createElement("h4", { style: { margin: "0 0 12px", color: "#60a5fa", fontSize: "14px", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" } },
+            "⚡ MAIN LIFTS & ASYMMETRY CUES (" + exercises.length + " EXERCISES)"
+          ),
           h.createElement(
             "div",
             { style: { display: "grid", gap: "12px" } },
@@ -2142,87 +2651,185 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
                 {
                   key: ex.exerciseId || idx,
                   style: {
-                    background: "#131614",
-                    border: "1px solid #232824",
+                    background: "#121513",
+                    border: "1px solid #232724",
                     borderRadius: "10px",
                     padding: "14px"
                   }
                 },
                 h.createElement(
                   "div",
-                  { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "6px", marginBottom: "6px" } },
-                  h.createElement("div", null,
-                    h.createElement("strong", { style: { color: "#f3f4f6", fontSize: "14px" } }, `${idx + 1}. ${ex.exerciseName}`),
-                    ex.target && h.createElement("div", { style: { color: "#9ca3af", fontSize: "11px", marginTop: "2px" } }, `Target: ${ex.target}`)
+                  { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", flexWrap: "wrap", gap: "8px" } },
+                  h.createElement(
+                    "div",
+                    null,
+                    h.createElement("strong", { style: { color: "#fff", fontSize: "14px", display: "block" } },
+                      (idx + 1) + ". " + (ex.exerciseName || ex.name)
+                    ),
+                    h.createElement("span", { style: { fontSize: "11px", color: "#9ca3af" } }, "Target: " + (ex.target || ex.muscle || "General"))
                   ),
-                  h.createElement("span", {
-                    style: {
-                      background: "rgba(132, 204, 22, 0.15)",
-                      color: "#84cc16",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      padding: "3px 8px",
-                      borderRadius: "4px"
-                    }
-                  }, `${ex.sets || 2} sets × ${ex.defaultRepRange || "10–12"} reps`)
-                ),
-                ex.formTips && h.createElement("p", {
-                  style: { margin: "6px 0", fontSize: "12px", color: "#d1d5db", lineHeight: 1.45, background: "#0a0c0a", padding: "8px 10px", borderRadius: "6px", borderLeft: "3px solid #84cc16" }
-                }, h.createElement("strong", { style: { color: "#84cc16" } }, "Form Tip: "), ex.formTips),
-                ex.asymmetryCues && h.createElement("p", {
-                  style: { margin: "6px 0", fontSize: "12px", color: "#facc15", lineHeight: 1.45, background: "rgba(234,179,8,0.06)", padding: "8px 10px", borderRadius: "6px", borderLeft: "3px solid #facc15" }
-                }, h.createElement("strong", null, "Asymmetry Cue: "), ex.asymmetryCues),
-                // Alternatives Table
-                ex.alternatives && ex.alternatives.length > 0 && h.createElement(
-                  "div",
-                  { style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #232824" } },
-                  h.createElement("span", { style: { fontSize: "10px", fontWeight: 800, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" } }, "3 Swappable Alternatives:"),
-                  h.createElement("ul", { style: { margin: "4px 0 0", paddingLeft: "16px", fontSize: "11px", color: "#cbd5e1", lineHeight: 1.5 } },
-                    ex.alternatives.map((alt, aIdx) =>
-                      h.createElement("li", { key: aIdx },
-                        h.createElement("span", { style: { color: "#84cc16", fontWeight: 600 } }, `${alt.category}: `),
-                        alt.name
-                      )
-                    )
+                  h.createElement(
+                    "span",
+                    {
+                      style: {
+                        background: "rgba(132,204,22,0.15)",
+                        color: "#84cc16",
+                        fontWeight: 800,
+                        fontSize: "11px",
+                        padding: "3px 8px",
+                        borderRadius: "4px"
+                      }
+                    },
+                    (ex.defaultSets || ex.sets || 2) + " Sets x " + (ex.defaultRepRange || "10-12") + " Reps"
                   )
+                ),
+                ex.formTips && h.createElement(
+                  "div",
+                  { style: { background: "rgba(0,0,0,0.3)", padding: "8px 10px", borderRadius: "6px", marginBottom: "10px", borderLeft: "3px solid #60a5fa" } },
+                  h.createElement("small", { style: { color: "#60a5fa", fontWeight: 700, display: "block", marginBottom: "2px" } }, "🎯 Form & Asymmetry Cues:"),
+                  h.createElement("p", { style: { margin: 0, color: "#d1d5db", fontSize: "12px", lineHeight: 1.4 } }, ex.formTips)
+                ),
+                ex.alternatives && h.createElement(
+                  "div",
+                  { style: { fontSize: "11px", color: "#9ca3af" } },
+                  h.createElement("strong", { style: { color: "#cbd5e1" } }, "Alternatives: "),
+                  ex.alternatives.dumbbell && h.createElement("span", null, "• DB: " + ex.alternatives.dumbbell + " "),
+                  ex.alternatives.machine && h.createElement("span", null, "• Machine: " + ex.alternatives.machine + " "),
+                  ex.alternatives.cableOrBodyweight && h.createElement("span", null, "• Body/Cable: " + ex.alternatives.cableOrBodyweight)
                 )
               )
             )
           )
         ),
 
-      // Tab Content: Cool-Down & Core Finisher
+      // TAB: POST-WORKOUT COOL-DOWN & DECOMPRESSION (Day-Specific)
       (activeTab === "all" || activeTab === "cooldown") &&
         h.createElement(
           "div",
-          { style: { display: "grid", gap: "14px", marginBottom: "20px" } },
-          // Core & Abs Finisher
-          h.createElement(
-            "div",
-            { style: { background: "#111412", padding: "14px", borderRadius: "10px", border: "1px solid #1f2420" } },
-            h.createElement("h4", { style: { margin: "0 0 8px", color: "#f59e0b", fontSize: "13px", letterSpacing: "0.05em" } }, "⚡ CORE & ABS FINISHER (OPTIONAL 2x / WEEK)"),
-            h.createElement("p", { style: { margin: "0 0 8px", fontSize: "11px", color: "#9ca3af" } }, "Format: 35s work / 25s rest (2 rounds)"),
-            h.createElement("ol", { style: { margin: 0, paddingLeft: "18px", color: "#d1d5db", fontSize: "12px", lineHeight: 1.6 } },
-              h.createElement("li", null, "Slow-Tempo Mountain Climbers (Zero torso twist, rigid plank)"),
-              h.createElement("li", null, "Floor Crunches with 2-Second Hold (Ribs to hips squeeze)"),
-              h.createElement("li", null, "Forearm Plank Hold (Depress shoulders, tight glutes)")
+          { style: { marginBottom: "18px", background: "#111412", padding: "16px", borderRadius: "12px", border: "1px solid rgba(56, 189, 248, 0.25)" } },
+          h.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "6px" } },
+            h.createElement("h4", { style: { margin: 0, color: "#38bdf8", fontSize: "14px", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" } },
+              "🧘 " + dayProto.name + " — Post-Workout Cool-Down"
+            ),
+            h.createElement("span", { style: { background: "rgba(56,189,248,0.15)", color: "#38bdf8", fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "4px" } },
+              "5 MINS • TAP TO CHECK"
             )
           ),
-          // Post-Workout Cool-Down
           h.createElement(
             "div",
-            { style: { background: "#111412", padding: "14px", borderRadius: "10px", border: "1px solid #1f2420" } },
-            h.createElement("h4", { style: { margin: "0 0 10px", color: "#38bdf8", fontSize: "13px", letterSpacing: "0.05em" } }, "🧘 POST-WORKOUT COOL-DOWN (5 MINS)"),
-            h.createElement("ol", { style: { margin: 0, paddingLeft: "18px", color: "#d1d5db", fontSize: "12px", lineHeight: 1.6 } },
-              h.createElement("li", null, "Pull-up bar Dead Hang: 2 x 30s (Spinal decompression)"),
-              h.createElement("li", null, "Doorway Chest & Front Shoulder Stretch: 45s per side"),
-              h.createElement("li", null, "Kneeling Hip Flexor Stretch: 45s per side"),
-              h.createElement("li", null, "Child's Pose into Cobra Stretch: 60s deep breathing")
+            { style: { display: "grid", gap: "10px" } },
+            dayProto.cooldown.map((step, idx) => {
+              const isChecked = !!checkedItems[step.id];
+              return h.createElement(
+                "div",
+                {
+                  key: step.id || idx,
+                  onClick: () => toggleCheck(step.id),
+                  style: {
+                    background: isChecked ? "rgba(56,189,248,0.06)" : "rgba(255,255,255,0.02)",
+                    border: "1px solid " + (isChecked ? "rgba(56,189,248,0.4)" : "#1f2420"),
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    opacity: isChecked ? 0.75 : 1
+                  }
+                },
+                h.createElement(
+                  "div",
+                  { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", gap: "8px" } },
+                  h.createElement("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
+                    h.createElement("span", {
+                      style: {
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "4px",
+                        border: "1px solid " + (isChecked ? "#38bdf8" : "#4b5563"),
+                        background: isChecked ? "#38bdf8" : "transparent",
+                        color: "#000",
+                        fontSize: "12px",
+                        fontWeight: 900
+                      }
+                    }, isChecked ? "✓" : ""),
+                    h.createElement("strong", {
+                      style: {
+                        color: isChecked ? "#38bdf8" : "#f3f4f6",
+                        fontSize: "13px",
+                        textDecoration: isChecked ? "line-through" : "none"
+                      }
+                    }, (idx + 1) + ". " + step.title)
+                  ),
+                  h.createElement("span", {
+                    style: {
+                      color: step.badge ? "#facc15" : "#38bdf8",
+                      background: step.badge ? "rgba(234,179,8,0.15)" : "rgba(56,189,248,0.1)",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      whiteSpace: "nowrap"
+                    }
+                  }, step.badge || step.time)
+                ),
+                h.createElement("p", { style: { margin: "4px 0 0 26px", color: isChecked ? "#6b7280" : "#9ca3af", fontSize: "12px", lineHeight: 1.45 } }, step.text)
+              );
+            })
+          )
+        ),
+
+      // TAB: ANTERIOR PELVIC TILT (APT) CLINICAL GUIDE
+      (activeTab === "all" || activeTab === "apt") &&
+        h.createElement(
+          "div",
+          { style: { marginBottom: "18px", background: "#13120c", padding: "16px", borderRadius: "12px", border: "1px solid rgba(234, 179, 8, 0.35)" } },
+          h.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexWrap: "wrap", gap: "6px" } },
+            h.createElement("h4", { style: { margin: 0, color: "#facc15", fontSize: "14px", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" } },
+              "🦴 Anterior Pelvic Tilt (APT) Correction Protocol"
+            ),
+            h.createElement("span", { style: { background: "rgba(234,179,8,0.18)", color: "#facc15", fontSize: "11px", fontWeight: 800, padding: "2px 8px", borderRadius: "4px" } },
+              "POSTURE PROTOCOL"
+            )
+          ),
+          h.createElement("p", { style: { margin: "0 0 14px", color: "#d1d5db", fontSize: "12px", lineHeight: 1.45 } },
+            "Anterior Pelvic Tilt is caused by shortened/tight hip flexors (psoas) and tight lumbar erectors pulling the pelvis forward, while glutes and deep abdominals are weak. Fix it by stretching the front hips with a posterior pelvic tuck and firing the glutes and core."
+          ),
+          h.createElement(
+            "div",
+            { style: { display: "grid", gap: "12px" } },
+            APT_CLINICAL_GUIDE.map((item) =>
+              h.createElement(
+                "div",
+                {
+                  key: item.number,
+                  style: {
+                    background: "rgba(0,0,0,0.35)",
+                    border: "1px solid rgba(234,179,8,0.2)",
+                    borderRadius: "8px",
+                    padding: "12px 14px"
+                  }
+                },
+                h.createElement(
+                  "div",
+                  { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px", flexWrap: "wrap", gap: "6px" } },
+                  h.createElement("strong", { style: { color: "#fff", fontSize: "13px" } }, item.number + ". " + item.name),
+                  h.createElement("span", { style: { color: "#facc15", background: "rgba(234,179,8,0.12)", fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px" } }, item.dose)
+                ),
+                h.createElement("div", { style: { fontSize: "11px", color: "#facc15", marginBottom: "6px", fontWeight: 600 } }, "🎯 Target: " + item.target),
+                h.createElement("p", { style: { margin: "0 0 8px", color: "#9ca3af", fontSize: "11px", fontStyle: "italic" } }, item.why),
+                h.createElement(
+                  "ul",
+                  { style: { margin: 0, paddingLeft: "16px", color: "#e2e8e3", fontSize: "12px", lineHeight: 1.4 } },
+                  item.cues.map((c, i) => h.createElement("li", { key: i, style: { marginBottom: "2px" } }, c))
+                )
+              )
             )
           )
         ),
 
-      // Footer Actions
+      // Modal Footer with Start Button
       h.createElement(
         "div",
         {
@@ -2231,15 +2838,20 @@ export function NeerajProtocolModal({ routine, onClose, onStart }) {
             justifyContent: "flex-end",
             gap: "10px",
             borderTop: "1px solid #1f2420",
-            paddingTop: "16px"
+            paddingTop: "16px",
+            flexWrap: "wrap"
           }
         },
         h.createElement(
           "button",
-          { className: "outline-button", onClick: onClose, style: { padding: "8px 16px" } },
+          {
+            className: "outline-button",
+            onClick: onClose,
+            style: { padding: "8px 16px" }
+          },
           "Close"
         ),
-        onStart && h.createElement(
+        routine && onStart && h.createElement(
           "button",
           {
             className: "primary-button",
