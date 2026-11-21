@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v21";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v22";
 
 class ChartErrorBoundary extends h.Component {
   constructor(props) {

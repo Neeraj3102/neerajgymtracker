@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v21";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v22";
 
 export const DEFAULT_PROFILE_ID = "11111111-1111-4111-a111-111111111111";
 
