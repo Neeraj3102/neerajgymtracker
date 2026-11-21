@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v26";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v27";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -1457,7 +1457,23 @@ export class BluetoothHeartRateService {
       }
 
       this.device.addEventListener('gattserverdisconnected', this.handleDisconnection);
-      this.server = await this.device.gatt.connect();
+      
+      // Auto-retry connection up to 3 times (BLE peripherals often need wake-up time)
+      let connectedServer = null;
+      let lastErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          connectedServer = await this.device.gatt.connect();
+          if (connectedServer && connectedServer.connected) break;
+        } catch (connErr) {
+          lastErr = connErr;
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        }
+      }
+      if (!connectedServer || !connectedServer.connected) {
+        throw lastErr || new Error("Connection attempt failed.");
+      }
+      this.server = connectedServer;
 
       let service;
       try {
@@ -1844,7 +1860,12 @@ export function HeartRateMonitorHUD({ onBpmChange, compact = false }) {
       setIsModalOpen(false);
     } catch (err) {
       if (err.name !== 'NotFoundError') {
-        setErrorMessage(err.message || 'Failed to connect via Web Bluetooth.');
+        const msg = err.message || '';
+        if (msg.toLowerCase().includes('connection') || msg.toLowerCase().includes('failed')) {
+          setErrorMessage("Connection attempt failed: 1) Wake your watch screen (tap physical button). 2) If your watch is paired to the Zepp app on your phone, open this site directly in Chrome on your phone, OR temporarily turn off phone Bluetooth so your watch is free to connect to your PC.");
+        } else {
+          setErrorMessage(msg || 'Failed to connect via Web Bluetooth.');
+        }
       }
     } finally {
       setIsScanning(false);
