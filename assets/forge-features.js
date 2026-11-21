@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v27";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v28";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -1487,8 +1487,16 @@ export class BluetoothHeartRateService {
       }
 
       this.characteristic = await service.getCharacteristic('heart_rate_measurement');
-      await this.characteristic.startNotifications();
-      this.characteristic.addEventListener('characteristicvaluechanged', this.handleCharacteristicValueChanged);
+      try {
+        await this.characteristic.startNotifications();
+        this.characteristic.addEventListener('characteristicvaluechanged', this.handleCharacteristicValueChanged);
+      } catch (notifErr) {
+        const errMsg = notifErr.message || '';
+        if (errMsg.toLowerCase().includes('not permitted') || errMsg.toLowerCase().includes('not allowed')) {
+          throw new Error('GATT not permitted by watch firmware: Amazfit watches only unlock standard BLE Heart Rate broadcasting while an active workout is running on the watch! Please press the watch button > tap "Workout" > select "Freestyle" (or Strength) on your watch, then tap Scan again.');
+        }
+        throw notifErr;
+      }
 
       if (this.onConnectionStateCallback) {
         this.onConnectionStateCallback(true, this.device.name || 'Amazfit Watch');
@@ -1730,8 +1738,8 @@ export function AmazfitConnectModal({ isOpen, onClose, onScanClick, onSimulateCl
           { style: { display: "flex", gap: "10px", background: "#181d19", border: "1px solid #28322a", padding: "10px", borderRadius: "10px" } },
           h.createElement("span", { style: { width: "20px", height: "20px", borderRadius: "50%", background: "#f59e0b", color: "#000", fontWeight: "800", fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, "2"),
           h.createElement("div", { style: { fontSize: "11px" } },
-            h.createElement("strong", { style: { color: "#ffffff" } }, "Enable Heart Rate Sharing"),
-            h.createElement("p", { style: { color: "#8b9089", margin: "2px 0 0" } }, "Scroll down to 'Heart Rate Sharing' (or 'Discoverable') and toggle it ON. The watch is now broadcasting standard GATT BLE.")
+            h.createElement("strong", { style: { color: "#ffffff" } }, "Enable Heart Rate Sharing & Start Workout"),
+            h.createElement("p", { style: { color: "#8b9089", margin: "2px 0 0" } }, "In Zepp, toggle 'Heart Rate Sharing' ON. On your watch, start a workout (e.g. 'Freestyle' or 'Strength Training') — Amazfit firmware requires an active workout on the watch to unlock live BLE broadcast.")
           )
         ),
         // Step 3
