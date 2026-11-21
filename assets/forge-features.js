@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v25";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v26";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -1421,15 +1421,55 @@ export class BluetoothHeartRateService {
     }
 
     try {
-      this.device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['heart_rate'] }],
-        optionalServices: ['heart_rate', 'battery_service']
-      });
+      // Use acceptAllDevices: true so Amazfit / Huami watches appear in the Chrome chooser
+      // (Amazfit does not include 0x180D in its initial 31-byte advertising frame)
+      const options = {
+        acceptAllDevices: true,
+        optionalServices: [
+          'heart_rate',
+          '0000180d-0000-1000-8000-00805f9b34fb',
+          'battery_service',
+          '0000180f-0000-1000-8000-00805f9b34fb',
+          'device_information',
+          '0000180a-0000-1000-8000-00805f9b34fb',
+          '0000fee0-0000-1000-8000-00805f9b34fb',
+          '0000fee1-0000-1000-8000-00805f9b34fb'
+        ]
+      };
+
+      try {
+        this.device = await navigator.bluetooth.requestDevice(options);
+      } catch (reqErr) {
+        // Fallback for browsers that enforce filters over acceptAllDevices
+        if (reqErr.name !== 'NotFoundError') {
+          this.device = await navigator.bluetooth.requestDevice({
+            filters: [
+              { services: ['heart_rate'] },
+              { namePrefix: 'Amazfit' },
+              { namePrefix: 'Bip' },
+              { namePrefix: 'Huami' }
+            ],
+            optionalServices: options.optionalServices
+          });
+        } else {
+          throw reqErr;
+        }
+      }
 
       this.device.addEventListener('gattserverdisconnected', this.handleDisconnection);
       this.server = await this.device.gatt.connect();
 
-      const service = await this.server.getPrimaryService('heart_rate');
+      let service;
+      try {
+        service = await this.server.getPrimaryService('heart_rate');
+      } catch (_) {
+        service = await this.server.getPrimaryService('0000180d-0000-1000-8000-00805f9b34fb');
+      }
+
+      if (!service) {
+        throw new Error('Connected to ' + (this.device.name || 'device') + ', but standard Heart Rate service is not exposed. Please ensure "Heart Rate Sharing" is toggled ON in the Zepp app.');
+      }
+
       this.characteristic = await service.getCharacteristic('heart_rate_measurement');
       await this.characteristic.startNotifications();
       this.characteristic.addEventListener('characteristicvaluechanged', this.handleCharacteristicValueChanged);
