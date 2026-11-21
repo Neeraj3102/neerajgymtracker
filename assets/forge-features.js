@@ -1,4 +1,4 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v19";
+import { r as h } from "./index-CiCrIMMp.js?v=stealth-v20";
 
 // Synthetic Web Audio chime for rest timer completion (no audio files required)
 function playTimerDoneSound() {
@@ -1160,5 +1160,223 @@ export function WorkoutReminderSetting() {
         enabled ? "Enabled" : "Enable"
       )
     )
+  );
+}
+
+/* =========================================================================
+   F11: PREVIOUS EXERCISE PERFORMANCE & GHOST VALUES
+   ========================================================================= */
+export function ExercisePreviousBadge({ exerciseId, exerciseName, unit = "kg", onApplySets }) {
+  const [prevData, setPrevData] = h.useState(null);
+  const [loading, setLoading] = h.useState(true);
+
+  h.useEffect(() => {
+    let cancelled = false;
+    async function fetchPrev() {
+      try {
+        if (!window.__FORGE_DB__ || !window.__FORGE_DB__.workouts) {
+          setLoading(false);
+          return;
+        }
+        const workouts = await window.__FORGE_DB__.workouts.orderBy("date").reverse().toArray();
+        for (const w of workouts) {
+          if (w.deletedAt || !w.exercises) continue;
+          const ex = w.exercises.find(
+            (e) =>
+              (e.exerciseId && e.exerciseId === exerciseId) ||
+              (e.exerciseName && e.exerciseName.trim().toLowerCase() === exerciseName?.trim().toLowerCase())
+          );
+          if (ex && ex.sets && ex.sets.length > 0) {
+            const completedSets = ex.sets.filter((s) => s.completed || (s.weightKg > 0 && s.reps > 0));
+            if (completedSets.length > 0) {
+              if (!cancelled) {
+                setPrevData({
+                  date: w.date,
+                  workoutName: w.name,
+                  sets: completedSets,
+                });
+                setLoading(false);
+              }
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[FORGE] Error fetching previous performance", e);
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    fetchPrev();
+    return () => {
+      cancelled = true;
+    };
+  }, [exerciseId, exerciseName]);
+
+  if (loading || !prevData) {
+    return h.createElement(
+      "span",
+      {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          fontSize: "11px",
+          color: "#717672",
+          background: "rgba(255, 255, 255, 0.03)",
+          padding: "2px 8px",
+          borderRadius: "6px",
+          border: "1px dashed rgba(255, 255, 255, 0.1)",
+          marginTop: "4px",
+        },
+      },
+      "⚡ First session for this lift"
+    );
+  }
+
+  // Format sets summary (e.g. 24kg × 10, 24kg × 8)
+  const setsSummary = prevData.sets
+    .slice(0, 3)
+    .map((s) => `${s.weightKg}${unit} × ${s.reps}`)
+    .join(", ") + (prevData.sets.length > 3 ? "…" : "");
+
+  const handleApply = (e) => {
+    e.stopPropagation();
+    if (typeof onApplySets === "function") {
+      const clonedSets = prevData.sets.map((s, idx) => ({
+        id: "set-" + Date.now() + "-" + idx,
+        weightKg: s.weightKg,
+        reps: s.reps,
+        warmup: !!s.warmup,
+        completed: false,
+        rpe: s.rpe || null,
+      }));
+      onApplySets(clonedSets);
+    }
+  };
+
+  return h.createElement(
+    "div",
+    {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        flexWrap: "wrap",
+        gap: "6px",
+        marginTop: "4px",
+      },
+    },
+    h.createElement(
+      "span",
+      {
+        title: `Logged on ${prevData.date} (${prevData.workoutName})`,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          fontSize: "11px",
+          fontWeight: "600",
+          color: "#9ae6b4",
+          background: "rgba(34, 197, 94, 0.1)",
+          border: "1px solid rgba(74, 222, 128, 0.25)",
+          padding: "3px 8px",
+          borderRadius: "6px",
+        },
+      },
+      h.createElement("span", null, "⚡ Last:"),
+      h.createElement("span", { style: { color: "#e2e8e3" } }, setsSummary)
+    ),
+    typeof onApplySets === "function" &&
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleApply,
+          title: "Copy weights and reps from last time into today's sets",
+          style: {
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "3px",
+            background: "rgba(255, 255, 255, 0.06)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            color: "#d1d5db",
+            fontSize: "10px",
+            fontWeight: "700",
+            padding: "2px 7px",
+            borderRadius: "5px",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+          },
+        },
+        "📋 Autofill"
+      )
+  );
+}
+
+/* =========================================================================
+   F12: SCREEN WAKE LOCK (PREVENTS PHONE FROM SLEEPING DURING WORKOUTS)
+   ========================================================================= */
+export function ScreenWakeLockToggle() {
+  const [active, setActive] = h.useState(false);
+  const wakeLockRef = h.useRef(null);
+
+  const requestLock = async () => {
+    try {
+      if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request("screen");
+        setActive(true);
+        wakeLockRef.current.addEventListener("release", () => {
+          setActive(false);
+          wakeLockRef.current = null;
+        });
+      }
+    } catch (_) {}
+  };
+
+  const releaseLock = async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+      } catch (_) {}
+      wakeLockRef.current = null;
+      setActive(false);
+    }
+  };
+
+  h.useEffect(() => {
+    requestLock();
+    const handleVis = () => {
+      if (document.visibilityState === "visible" && !wakeLockRef.current) {
+        requestLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVis);
+    return () => {
+      releaseLock();
+      document.removeEventListener("visibilitychange", handleVis);
+    };
+  }, []);
+
+  return h.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: active ? releaseLock : requestLock,
+      title: active ? "Screen kept awake. Tap to allow phone sleep." : "Screen sleep allowed. Tap to keep screen awake.",
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        background: active ? "rgba(34, 197, 94, 0.15)" : "rgba(255, 255, 255, 0.05)",
+        border: active ? "1px solid #22c55e" : "1px solid #3c423e",
+        color: active ? "#4ade80" : "#9ca3af",
+        padding: "4px 10px",
+        borderRadius: "16px",
+        fontSize: "11px",
+        fontWeight: "700",
+        cursor: "pointer",
+      },
+    },
+    h.createElement("span", null, active ? "💡 Screen On" : "💤 Sleep Ok")
   );
 }
