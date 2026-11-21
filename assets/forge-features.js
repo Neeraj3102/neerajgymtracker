@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v23";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v24";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -3872,5 +3872,25 @@ export function ExerciseDemoButton({ exerciseId, exerciseName }) {
       exercise: matched,
       onClose: () => setIsOpen(false),
     })
+  );
+}
+
+
+export function AmazfitSettingsCard() {
+  return h.createElement(
+    "section",
+    { className: "settings-card", style: { marginTop: "12px", border: "1px solid rgba(14, 165, 233, 0.3)", background: "rgba(14, 165, 233, 0.05)" } },
+    h.createElement("div", { className: "settings-icon", style: { fontSize: "20px" } }, "⌚"),
+    h.createElement(
+      "div",
+      { className: "settings-copy", style: { width: "100%" } },
+      h.createElement("h2", { style: { color: "#38bdf8" } }, "Amazfit & Bluetooth Heart Rate"),
+      h.createElement("p", null, "Broadcast live heart rate telemetry from your Amazfit Bip U Pro watch (or any BLE heart rate monitor) via the Zepp App with 0 extra apps."),
+      h.createElement(
+        "div",
+        { style: { marginTop: "8px" } },
+        h.createElement(HeartRateMonitorHUD, null)
+      )
+    )
   );
 }
