@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v24";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v25";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -1493,7 +1493,40 @@ export class BluetoothHeartRateService {
     }
   }
 
+  startSimulation() {
+    this.disconnect();
+    this.isSimulated = true;
+    if (this.onConnectionStateCallback) {
+      this.onConnectionStateCallback(true, 'Amazfit (Test Mode)');
+    }
+    let simBpm = 118;
+    let delta = 3;
+    const update = () => {
+      simBpm += delta;
+      if (simBpm >= 168) delta = -4;
+      if (simBpm <= 112) delta = 3;
+      const zoneInfo = this.calculateHrZone(simBpm);
+      if (this.onHeartRateCallback) {
+        this.onHeartRateCallback({
+          bpm: simBpm,
+          timestamp: Date.now(),
+          zoneName: zoneInfo.name,
+          zoneColor: zoneInfo.color,
+          zoneIndex: zoneInfo.index,
+          isSimulated: true
+        });
+      }
+    };
+    update();
+    this.simInterval = setInterval(update, 1200);
+  }
+
   disconnect() {
+    if (this.simInterval) {
+      clearInterval(this.simInterval);
+      this.simInterval = null;
+    }
+    this.isSimulated = false;
     if (this.device && this.device.gatt.connected) {
       this.device.gatt.disconnect();
     }
@@ -1517,7 +1550,7 @@ export class BluetoothHeartRateService {
   }
 }
 
-export function AmazfitConnectModal({ isOpen, onClose, onScanClick, isScanning = false, error = null }) {
+export function AmazfitConnectModal({ isOpen, onClose, onScanClick, onSimulateClick, isScanning = false, error = null }) {
   if (!isOpen) return null;
 
   return h.createElement(
@@ -1686,6 +1719,30 @@ export function AmazfitConnectModal({ isOpen, onClose, onScanClick, isScanning =
           },
           isScanning ? "Scanning for Amazfit Watch..." : "📡 Scan for Amazfit Watch"
         ),
+        // Test / Demo Simulation Button
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onSimulateClick,
+            style: {
+              height: "36px",
+              background: "rgba(16, 185, 129, 0.12)",
+              border: "1px dashed rgba(16, 185, 129, 0.5)",
+              borderRadius: "10px",
+              color: "#34d399",
+              fontSize: "11px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              transition: "all 0.15s ease",
+            },
+          },
+          "🧪 Test / Simulate Live BPM (Instant Demo)"
+        ),
         h.createElement(
           "div",
           { style: { textAlign: "center", fontSize: "10px", color: "#6b7280", fontFamily: "monospace" } },
@@ -1731,6 +1788,12 @@ export function HeartRateMonitorHUD({ onBpmChange, compact = false }) {
       service.disconnect();
     };
   }, []);
+
+  const handleSimulate = () => {
+    if (!bleServiceRef.current) return;
+    bleServiceRef.current.startSimulation();
+    setIsModalOpen(false);
+  };
 
   const handleScanAndConnect = async () => {
     if (!bleServiceRef.current) return;
@@ -1786,6 +1849,7 @@ export function HeartRateMonitorHUD({ onBpmChange, compact = false }) {
         isOpen: isModalOpen,
         onClose: () => setIsModalOpen(false),
         onScanClick: handleScanAndConnect,
+        onSimulateClick: handleSimulate,
         isScanning,
         error: errorMessage,
       })
