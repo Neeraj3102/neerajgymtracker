@@ -1,4 +1,11 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v22";
+import { ExerciseDemoButton } from "./forge-features.js?v=stealth-v23";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v23";
+const h = new Proxy({}, {
+  get(_, prop) {
+    const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
+    return activeReact ? activeReact[prop] : undefined;
+  }
+});
 
 export function initNeerajPlanReact() {}
 

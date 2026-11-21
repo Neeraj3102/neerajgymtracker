@@ -1,4 +1,10 @@
-import { r as h } from "./index-CiCrIMMp.js?v=stealth-v22";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v23";
+const h = new Proxy({}, {
+  get(_, prop) {
+    const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
+    return activeReact ? activeReact[prop] : undefined;
+  }
+});
 
 export const DEFAULT_PROFILE_ID = "11111111-1111-4111-a111-111111111111";
 
