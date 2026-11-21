@@ -81,6 +81,16 @@ function minifyWorkoutPayload(w) {
   return clean;
 }
 
+// Helper for fail-fast gym basement timeouts (prevents frozen UI on spotty cell service)
+function getFetchSignal(timeoutMs = 8000) {
+  try {
+    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+      return AbortSignal.timeout(timeoutMs);
+    }
+  } catch (_) {}
+  return undefined;
+}
+
 export async function pushWorkoutToSupabase(w) {
   try {
     const payload = minifyWorkoutPayload(w);
@@ -88,7 +98,8 @@ export async function pushWorkoutToSupabase(w) {
     await fetch(`${SUPABASE_URL}/rest/v1/workouts`, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: getFetchSignal(8000)
     });
   } catch (err) {
     logClientError("pushWorkout", err);
@@ -102,7 +113,8 @@ export async function deleteWorkoutFromSupabase(id, userId) {
     const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(uid)}`;
     await fetch(`${SUPABASE_URL}/rest/v1/workouts?${filter}`, {
       method: "DELETE",
-      headers: getRequestHeaders(uid)
+      headers: getRequestHeaders(uid),
+      signal: getFetchSignal(8000)
     });
   } catch (err) {
     logClientError("deleteWorkout", err);
@@ -130,7 +142,8 @@ export async function pushRoutineToSupabase(r) {
     await fetch(`${SUPABASE_URL}/rest/v1/routines`, {
       method: "POST",
       headers: getRequestHeaders(pId),
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: getFetchSignal(8000)
     });
   } catch (err) {
     logClientError("pushRoutine", err);
@@ -144,7 +157,8 @@ export async function deleteRoutineFromSupabase(id, userId) {
     const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(uid)}`;
     await fetch(`${SUPABASE_URL}/rest/v1/routines?${filter}`, {
       method: "DELETE",
-      headers: getRequestHeaders(uid)
+      headers: getRequestHeaders(uid),
+      signal: getFetchSignal(8000)
     });
   } catch (err) {
     logClientError("deleteRoutine", err);
@@ -166,7 +180,8 @@ export async function pushCustomExerciseToSupabase(e) {
     await fetch(`${SUPABASE_URL}/rest/v1/custom_exercises`, {
       method: "POST",
       headers: getRequestHeaders(pId),
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: getFetchSignal(8000)
     });
   } catch (err) {
     logClientError("pushCustomExercise", err);
@@ -192,16 +207,17 @@ export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfil
         localStorage.setItem(purgeKey, "true");
         await fetch(`${SUPABASE_URL}/rest/v1/workouts?user_id=eq.${encodeURIComponent(profileId)}`, {
           method: "DELETE",
-          headers
+          headers,
+          signal: getFetchSignal(8000)
         });
       } catch (_) {}
     }
 
-    // 1. Sync Workouts (Scoped to user_id to prevent multi-tenant exposure)
+    // 1. Sync Workouts (Bounded to latest 60 sessions to prevent runaway quota & bandwidth)
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/workouts?select=*&user_id=eq.${encodeURIComponent(profileId)}`,
-        { headers }
+        `${SUPABASE_URL}/rest/v1/workouts?select=*&user_id=eq.${encodeURIComponent(profileId)}&order=date.desc&limit=60`,
+        { headers, signal: getFetchSignal(8000) }
       );
       if (res.ok) {
         const remoteWorkouts = await res.json();
@@ -233,11 +249,11 @@ export async function syncAllWithSupabase(localDb, setSyncStatus, optionalProfil
       logClientError("syncWorkouts", e);
     }
 
-    // 2. Sync Custom Routines (Scoped to user_id or system templates)
+    // 2. Sync Custom Routines (Bounded to 30 templates)
     try {
       const resRoutines = await fetch(
-        `${SUPABASE_URL}/rest/v1/routines?select=*&or=(user_id.eq.${encodeURIComponent(profileId)},user_id.is.null)`,
-        { headers }
+        `${SUPABASE_URL}/rest/v1/routines?select=*&or=(user_id.eq.${encodeURIComponent(profileId)},user_id.is.null)&limit=30`,
+        { headers, signal: getFetchSignal(8000) }
       );
       if (resRoutines.ok) {
         const remoteRoutines = await resRoutines.json();
