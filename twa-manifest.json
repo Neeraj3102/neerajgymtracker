@@ -1,0 +1,36 @@
+{
+  "packageId": "app.forge.gymtracker",
+  "host": "neerajgymtracker.vercel.app",
+  "name": "FORGE",
+  "launcherName": "FORGE",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b0d0c",
+  "navigationColor": "#0b0d0c",
+  "navigationColorDark": "#0b0d0c",
+  "navigationDividerColor": "#0b0d0c",
+  "navigationDividerColorDark": "#0b0d0c",
+  "backgroundColor": "#0b0d0c",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://neerajgymtracker.vercel.app/icon-512.svg",
+  "maskableIconUrl": "https://neerajgymtracker.vercel.app/icon-512.svg",
+  "monochromeIconUrl": "https://neerajgymtracker.vercel.app/icon-192.svg",
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "release.keystore",
+    "alias": "forge-key"
+  },
+  "features": {
+    "locationDelegation": { "enabled": false },
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://neerajgymtracker.vercel.app/",
+  "minSdkVersion": 21,
+  "generatorApp": "bubblewrap-cli"
+}
