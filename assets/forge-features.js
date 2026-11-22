@@ -53,6 +53,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
       setSecondsLeft(dur);
       setIsRunning(true);
       setIsOpen(true);
+      setIsMinimized(false);
     }
     window.addEventListener("forge-start-rest-timer", handleStartEvent);
     return () => window.removeEventListener("forge-start-rest-timer", handleStartEvent);
@@ -95,29 +96,41 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
           bottom: "76px",
           right: "16px",
           zIndex: 999,
-          background: "linear-gradient(135deg, #1f2320, #131614)",
-          border: "1px solid #3c423e",
+          background: "rgba(18, 22, 28, 0.85)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          border: "1px solid rgba(245, 158, 11, 0.35)",
           borderRadius: "24px",
           padding: "8px 14px",
-          color: "#e2e8e3",
+          color: "#fbbf24",
           fontSize: "12px",
-          fontWeight: "700",
+          fontWeight: "800",
+          fontFamily: "monospace",
           display: "flex",
           alignItems: "center",
           gap: "6px",
           cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.6), 0 0 12px rgba(245, 158, 11, 0.15)",
         },
       },
       h.createElement("span", null, "⏱️"),
-      h.createElement("span", null, "Rest Timer")
+      h.createElement("span", null, "REST TIMER")
     );
   }
 
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
   const timeFormatted = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  const pct = totalDuration > 0 ? (secondsLeft / totalDuration) * 100 : 0;
+  const pct = totalDuration > 0 ? (secondsLeft / totalDuration) : 0;
+  
+  // Circumference for r=44
+  const radius = 44;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - pct);
+  
+  // Dynamic color & pulse
+  const isLast10 = secondsLeft > 0 && secondsLeft <= 10;
+  const ringColor = secondsLeft === 0 ? "#22c55e" : (isLast10 ? "#ef4444" : "#f59e0b");
 
   if (isMinimized) {
     return h.createElement(
@@ -129,23 +142,26 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
           bottom: "76px",
           right: "16px",
           zIndex: 999,
-          background: secondsLeft === 0 ? "#1b4d2e" : "#1a1e1b",
-          border: "1px solid #3c423e",
+          background: secondsLeft === 0 ? "rgba(22, 101, 52, 0.9)" : "rgba(18, 22, 28, 0.9)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: `1px solid ${ringColor}`,
           borderRadius: "30px",
-          padding: "8px 16px",
-          color: secondsLeft === 0 ? "#4ade80" : "#d1d5db",
+          padding: "6px 14px",
+          color: secondsLeft === 0 ? "#4ade80" : "#fbbf24",
           fontFamily: "monospace",
           fontSize: "13px",
-          fontWeight: "bold",
+          fontWeight: "800",
           display: "flex",
           alignItems: "center",
           gap: "8px",
           cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+          boxShadow: `0 4px 20px rgba(0,0,0,0.6), 0 0 12px ${ringColor}33`,
+          animation: isLast10 ? "timer-ring-pulse 1s infinite" : "none",
         },
       },
       h.createElement("span", null, secondsLeft === 0 ? "🔔 Done!" : `⏱️ ${timeFormatted}`),
-      h.createElement("span", { style: { fontSize: "10px", color: "#8b9089" } }, "▲")
+      h.createElement("span", { style: { fontSize: "10px", color: "#9ca3af" } }, "▲")
     );
   }
 
@@ -158,22 +174,47 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
         left: "50%",
         transform: "translateX(-50%)",
         width: "calc(100% - 32px)",
-        maxWidth: "360px",
+        maxWidth: "340px",
         zIndex: 999,
-        background: "rgba(18, 21, 19, 0.95)",
-        backdropFilter: "blur(16px)",
-        border: "1px solid #2e3530",
-        borderRadius: "20px",
-        padding: "14px 16px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.8)",
+        background: "rgba(14, 17, 23, 0.92)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        borderRadius: "22px",
+        padding: "16px",
+        boxShadow: "0 16px 40px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.06)",
         color: "#e2e8e3",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
       },
     },
-    // Top Bar
+    // Top Bar (Label & Window controls)
     h.createElement(
       "div",
-      { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" } },
-      h.createElement("span", { style: { fontSize: "11px", fontWeight: "700", color: "#8b9089", textTransform: "uppercase", letterSpacing: "0.05em" } }, "Rest Countdown"),
+      {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+          marginBottom: "10px",
+        },
+      },
+      h.createElement(
+        "span",
+        {
+          style: {
+            fontSize: "10.5px",
+            fontWeight: "800",
+            color: "#9ca3af",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            fontFamily: "monospace",
+          },
+        },
+        "⏱️ REST COUNTDOWN"
+      ),
       h.createElement(
         "div",
         { style: { display: "flex", gap: "8px" } },
@@ -181,7 +222,15 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
           "button",
           {
             onClick: () => setIsMinimized(true),
-            style: { background: "transparent", border: "none", color: "#8b9089", cursor: "pointer", fontSize: "12px" },
+            style: {
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "5px",
+              color: "#9ca3af",
+              cursor: "pointer",
+              fontSize: "11px",
+              padding: "2px 7px",
+            },
           },
           "▼ Min"
         ),
@@ -193,119 +242,213 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
               setIsOpen(false);
               setSecondsLeft(0);
             },
-            style: { background: "transparent", border: "none", color: "#8b9089", cursor: "pointer", fontSize: "13px" },
+            style: {
+              background: "rgba(239, 68, 68, 0.12)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              borderRadius: "5px",
+              color: "#f87171",
+              cursor: "pointer",
+              fontSize: "11px",
+              padding: "2px 7px",
+            },
           },
-          "✕"
+          "✕ Close"
         )
       )
     ),
-    // Time Readout & Progress
-    h.createElement(
-      "div",
-      { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" } },
-      h.createElement(
-        "div",
-        {
-          style: {
-            fontSize: "32px",
-            fontWeight: "800",
-            fontFamily: "monospace",
-            color: secondsLeft === 0 ? "#4ade80" : "#ffffff",
-          },
-        },
-        secondsLeft === 0 ? "Ready to Lift!" : timeFormatted
-      ),
-      h.createElement(
-        "div",
-        { style: { display: "flex", gap: "6px" } },
-        h.createElement(
-          "button",
-          {
-            onClick: () => setIsRunning((r) => !r),
-            style: {
-              background: isRunning ? "#272c28" : "#22c55e",
-              color: isRunning ? "#d1d5db" : "#0d130e",
-              border: "none",
-              borderRadius: "8px",
-              padding: "6px 12px",
-              fontSize: "12px",
-              fontWeight: "700",
-              cursor: "pointer",
-            },
-          },
-          isRunning ? "Pause" : "Start"
-        ),
-        h.createElement(
-          "button",
-          {
-            onClick: () => {
-              setSecondsLeft(totalDuration);
-              setIsRunning(true);
-            },
-            style: {
-              background: "#272c28",
-              color: "#9ca3af",
-              border: "1px solid #37413a",
-              borderRadius: "8px",
-              padding: "6px 10px",
-              fontSize: "12px",
-              cursor: "pointer",
-            },
-          },
-          "Reset"
-        )
-      )
-    ),
-    // Progress Bar
+    // SVG Circular Ring Countdown
     h.createElement(
       "div",
       {
         style: {
-          width: "100%",
-          height: "4px",
-          background: "#252b27",
-          borderRadius: "2px",
-          overflow: "hidden",
-          marginBottom: "10px",
+          position: "relative",
+          width: "110px",
+          height: "110px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "6px 0 14px",
         },
       },
-      h.createElement("div", {
-        style: {
-          height: "100%",
-          width: `${pct}%`,
-          background: secondsLeft === 0 ? "#4ade80" : "#22c55e",
-          transition: "width 1s linear",
+      h.createElement(
+        "svg",
+        {
+          width: "110",
+          height: "110",
+          viewBox: "0 0 110 110",
+          style: { transform: "rotate(-90deg)" },
         },
-      })
-    ),
-    // Preset Buttons
-    h.createElement(
-      "div",
-      { style: { display: "flex", gap: "6px", justifyContent: "space-between" } },
-      [30, 60, 90, 120, 180].map((dur) =>
+        // Track circle
+        h.createElement("circle", {
+          cx: "55",
+          cy: "55",
+          r: radius,
+          fill: "transparent",
+          stroke: "rgba(255, 255, 255, 0.08)",
+          strokeWidth: "7",
+        }),
+        // Animated Progress Arc
+        h.createElement("circle", {
+          cx: "55",
+          cy: "55",
+          r: radius,
+          fill: "transparent",
+          stroke: ringColor,
+          strokeWidth: "7",
+          strokeDasharray: circumference,
+          strokeDashoffset: strokeDashoffset,
+          strokeLinecap: "round",
+          style: {
+            transition: "stroke-dashoffset 0.85s linear, stroke 0.3s ease",
+            filter: `drop-shadow(0 0 8px ${ringColor}66)`,
+          },
+        })
+      ),
+      // Center digital display
+      h.createElement(
+        "div",
+        {
+          style: {
+            position: "absolute",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          },
+        },
         h.createElement(
-          "button",
+          "span",
           {
-            key: dur,
-            onClick: () => {
-              setTotalDuration(dur);
-              setSecondsLeft(dur);
-              setIsRunning(true);
-            },
             style: {
-              flex: 1,
-              background: totalDuration === dur ? "#2e3b31" : "#1c211e",
-              border: totalDuration === dur ? "1px solid #4ade80" : "1px solid #2a312c",
-              color: totalDuration === dur ? "#4ade80" : "#9ca3af",
-              borderRadius: "8px",
-              padding: "5px 0",
-              fontSize: "11px",
-              fontWeight: "600",
-              cursor: "pointer",
+              fontFamily: "monospace",
+              fontSize: "24px",
+              fontWeight: "900",
+              color: ringColor,
+              letterSpacing: "-0.03em",
+              fontVariantNumeric: "tabular-nums",
             },
           },
-          `${dur}s`
+          secondsLeft === 0 ? "DONE" : timeFormatted
+        ),
+        h.createElement(
+          "span",
+          {
+            style: {
+              fontSize: "9px",
+              fontWeight: "800",
+              color: "#9ca3af",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginTop: "-2px",
+            },
+          },
+          secondsLeft === 0 ? "REST OVER" : "SECONDS"
         )
+      )
+    ),
+    // Quick Add / Adjust Pills
+    h.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          gap: "8px",
+          width: "100%",
+          justifyContent: "center",
+        },
+      },
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setSecondsLeft((prev) => Math.max(0, prev - 15));
+          },
+          style: {
+            flex: "1",
+            padding: "6px 0",
+            background: "rgba(255, 255, 255, 0.05)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "8px",
+            color: "#d1d5db",
+            fontSize: "11px",
+            fontWeight: "700",
+            fontFamily: "monospace",
+            cursor: "pointer",
+          },
+        },
+        "-15s"
+      ),
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setSecondsLeft((prev) => prev + 30);
+            setTotalDuration((prev) => prev + 30);
+            setIsRunning(true);
+          },
+          style: {
+            flex: "1",
+            padding: "6px 0",
+            background: "rgba(245, 158, 11, 0.12)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: "8px",
+            color: "#fbbf24",
+            fontSize: "11px",
+            fontWeight: "700",
+            fontFamily: "monospace",
+            cursor: "pointer",
+          },
+        },
+        "+30s"
+      ),
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setSecondsLeft((prev) => prev + 60);
+            setTotalDuration((prev) => prev + 60);
+            setIsRunning(true);
+          },
+          style: {
+            flex: "1",
+            padding: "6px 0",
+            background: "rgba(245, 158, 11, 0.12)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: "8px",
+            color: "#fbbf24",
+            fontSize: "11px",
+            fontWeight: "700",
+            fontFamily: "monospace",
+            cursor: "pointer",
+          },
+        },
+        "+60s"
+      ),
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setSecondsLeft(0);
+            setIsRunning(false);
+          },
+          style: {
+            flex: "1",
+            padding: "6px 0",
+            background: "rgba(34, 197, 94, 0.15)",
+            border: "1px solid rgba(34, 197, 94, 0.35)",
+            borderRadius: "8px",
+            color: "#4ade80",
+            fontSize: "11px",
+            fontWeight: "700",
+            fontFamily: "monospace",
+            cursor: "pointer",
+          },
+        },
+        "Skip"
       )
     )
   );
@@ -1665,8 +1808,9 @@ export function AnatomyMannequin({ muscleData = {}, selectedMuscle = null, onSel
           width: "100%",
           maxWidth: "260px",
           aspectRatio: "1/2",
-          background: "#111412",
-          border: "1px solid #242c26",
+          background: "radial-gradient(ellipse at center, #18201a 0%, #0d100e 100%)",
+          border: "1px solid rgba(245, 158, 11, 0.25)",
+          boxShadow: "0 8px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(245, 158, 11, 0.05)",
           borderRadius: "16px",
           padding: "16px",
           display: "flex",
@@ -3402,3 +3546,161 @@ export function ExerciseDemoButton({ exerciseId, exerciseName }) {
 }
 
 
+
+// =========================================================================
+// Visual Enhancements: Density Mode Toggle & Exercise Micro Badges
+// =========================================================================
+
+export function DensityModeToggle() {
+  const [isChalk, setIsChalk] = h.useState(() => {
+    try {
+      return localStorage.getItem("forge_density_mode") === "chalk";
+    } catch (_) {
+      return false;
+    }
+  });
+
+  h.useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (isChalk) {
+        document.body.classList.add("chalk-mode");
+      } else {
+        document.body.classList.remove("chalk-mode");
+      }
+    }
+    try {
+      localStorage.setItem("forge_density_mode", isChalk ? "chalk" : "dense");
+    } catch (_) {}
+  }, [isChalk]);
+
+  return h.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setIsChalk(!isChalk);
+        if (navigator.vibrate) navigator.vibrate(30);
+      },
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        background: isChalk ? "rgba(245, 158, 11, 0.2)" : "rgba(255, 255, 255, 0.06)",
+        border: isChalk ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.12)",
+        color: isChalk ? "#fbbf24" : "#9ca3af",
+        borderRadius: "6px",
+        padding: "3px 8px",
+        fontSize: "11px",
+        fontWeight: "700",
+        fontFamily: "monospace",
+        cursor: "pointer",
+        transition: "all 0.18s ease",
+      },
+      title: isChalk ? "Switch to Compact Dense Mode" : "Switch to Chalk Mode (Large Touch Targets)",
+    },
+    isChalk ? "🖐️ Chalk" : "📏 Dense"
+  );
+}
+
+export function ExerciseMicroBadges({ exerciseName = "" }) {
+  const norm = (exerciseName || "").toLowerCase();
+  
+  // Equipment detection
+  let equip = { label: "Free Weight", icon: "⚡", bg: "rgba(148, 163, 184, 0.12)", color: "#cbd5e1" };
+  if (/barbell|\bbb\b|deadlift|squat|bench press|rdl/i.test(norm) && !/dumbbell|\bdb\b/i.test(norm)) {
+    equip = { label: "Barbell", icon: "🏋️", bg: "rgba(59, 130, 246, 0.12)", color: "#93c5fd" };
+  } else if (/dumbbell|\bdb\b/i.test(norm)) {
+    equip = { label: "Dumbbell", icon: "🔩", bg: "rgba(168, 85, 247, 0.12)", color: "#d8b4fe" };
+  } else if (/cable|pulley|lat pulldown|rope|pushdown/i.test(norm)) {
+    equip = { label: "Cable", icon: "⚙️", bg: "rgba(245, 158, 11, 0.12)", color: "#fcd34d" };
+  } else if (/machine|press machine|hack squat|pec deck|leg extension|leg curl|smith/i.test(norm)) {
+    equip = { label: "Machine", icon: "🏢", bg: "rgba(20, 184, 166, 0.12)", color: "#5eead4" };
+  } else if (/pull-up|chin-up|dip|hanging|push-up|plank|hyperextension/i.test(norm)) {
+    equip = { label: "Bodyweight", icon: "🧘", bg: "rgba(34, 197, 94, 0.12)", color: "#86efac" };
+  }
+
+  // Primary muscle detection
+  let muscle = { label: "Compound", dot: "#fbbf24" };
+  if (/bench|chest|fly|pec|push-up|dip/i.test(norm) && !/overhead|tricep/i.test(norm)) {
+    muscle = { label: "Chest", dot: "#f43f5e" };
+  } else if (/lat|row|pull|chin/i.test(norm)) {
+    muscle = { label: "Back", dot: "#0ea5e9" };
+  } else if (/shoulder|lateral raise|deltoid|overhead press|arnold/i.test(norm)) {
+    muscle = { label: "Shoulders", dot: "#eab308" };
+  } else if (/squat|leg press|hack squat|lunge|quad|extension/i.test(norm)) {
+    muscle = { label: "Quads", dot: "#10b981" };
+  } else if (/rdl|deadlift|leg curl|hamstring/i.test(norm)) {
+    muscle = { label: "Hamstrings", dot: "#8b5cf6" };
+  } else if (/tricep|skull crusher|pushdown/i.test(norm)) {
+    muscle = { label: "Triceps", dot: "#f97316" };
+  } else if (/bicep|curl|hammer/i.test(norm)) {
+    muscle = { label: "Biceps", dot: "#06b6d4" };
+  } else if (/calf|calves/i.test(norm)) {
+    muscle = { label: "Calves", dot: "#14b8a6" };
+  } else if (/abs|crunch|plank|core|hanging leg/i.test(norm)) {
+    muscle = { label: "Core", dot: "#a855f7" };
+  }
+
+  return h.createElement(
+    "div",
+    {
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "5px",
+        marginTop: "3px",
+        flexWrap: "wrap",
+      },
+    },
+    h.createElement(
+      "span",
+      {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "3px",
+          padding: "1px 6px",
+          borderRadius: "4px",
+          background: equip.bg,
+          border: `1px solid ${equip.color}33`,
+          color: equip.color,
+          fontSize: "9.5px",
+          fontWeight: "700",
+          fontFamily: "monospace",
+          letterSpacing: "0.02em",
+        },
+      },
+      `${equip.icon} ${equip.label}`
+    ),
+    h.createElement(
+      "span",
+      {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          padding: "1px 6px",
+          borderRadius: "4px",
+          background: "rgba(255, 255, 255, 0.05)",
+          border: "1px solid rgba(255, 255, 255, 0.09)",
+          color: "#e2e8e3",
+          fontSize: "9.5px",
+          fontWeight: "700",
+          fontFamily: "monospace",
+          letterSpacing: "0.02em",
+        },
+      },
+      h.createElement("span", {
+        style: {
+          width: "5px",
+          height: "5px",
+          borderRadius: "50%",
+          background: muscle.dot,
+          boxShadow: `0 0 5px ${muscle.dot}`,
+          display: "inline-block",
+        },
+      }),
+      muscle.label
+    )
+  );
+}

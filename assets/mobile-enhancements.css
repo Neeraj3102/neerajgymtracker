@@ -1,5 +1,5 @@
 /* =========================================================================
-   FORGE Mobile & iOS / Android PWA Enhancements + Desktop Mouse Scroll Fix (v16)
+   FORGE Mobile & iOS / Android PWA Enhancements (v31 Stealth Aesthetic)
    ========================================================================= */
 
 :root {
@@ -7,6 +7,14 @@
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+  
+  --forge-bg: #090a0d;
+  --forge-glass: rgba(18, 21, 26, 0.78);
+  --forge-glass-card: rgba(22, 26, 32, 0.84);
+  --forge-glass-border: rgba(255, 255, 255, 0.08);
+  --forge-glass-highlight: rgba(255, 255, 255, 0.04);
+  --forge-gold-glow: rgba(245, 158, 11, 0.14);
+  --forge-emerald-glow: rgba(34, 197, 94, 0.16);
 }
 
 /* Ensure root document handles mouse wheel, trackpad, and keyboard scrolling cleanly */
@@ -16,6 +24,7 @@ html {
   scroll-behavior: smooth;
   width: 100%;
   -webkit-text-size-adjust: 100%;
+  background-color: var(--forge-bg);
 }
 
 body {
@@ -25,6 +34,11 @@ body {
   margin: 0;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  background-color: var(--forge-bg) !important;
+  background-image: 
+    radial-gradient(at 50% 0%, rgba(245, 158, 11, 0.04) 0px, transparent 55%),
+    radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.03) 0px, transparent 50%) !important;
+  background-attachment: fixed !important;
 }
 
 /* Restrict mobile pull-to-refresh containment to touch devices only */
@@ -34,12 +48,21 @@ body {
   }
 }
 
+/* =========================================================================
+   1. Liquid Glass / Obsidian Glassmorphism Elevation
+   ========================================================================= */
+
 /* Topbar notch & Dynamic Island protection */
 .topbar {
   padding-top: var(--sat) !important;
   height: calc(74px + var(--sat)) !important;
   padding-left: max(16px, var(--sal)) !important;
   padding-right: max(16px, var(--sar)) !important;
+  background: rgba(9, 10, 13, 0.84) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid var(--forge-glass-border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* Bottom floating navbar safe area & gesture bar protection */
@@ -47,14 +70,169 @@ body {
   bottom: calc(14px + var(--sab)) !important;
   width: min(600px, calc(100% - 24px)) !important;
   touch-action: manipulation;
+  background: rgba(13, 16, 21, 0.88) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border: 1px solid var(--forge-glass-border) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.7), inset 0 1px 0 var(--forge-glass-highlight) !important;
 }
 
-/* Page shell bottom clearance (prevents content being blocked by bottom nav) */
+/* Page shell bottom clearance */
 .app-shell {
   padding-bottom: calc(115px + var(--sab)) !important;
 }
 
-/* Responsive Main content padding on mobile */
+/* Liquid Glass Cards (Exercise Cards, Routine Tiles, Start Cards, Settings) */
+.exercise-card,
+.routine-tile,
+.start-card,
+.settings-card,
+.neeraj-protocol-modal,
+.form-modal,
+.empty-card {
+  background: var(--forge-glass) !important;
+  backdrop-filter: blur(14px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  border: 1px solid var(--forge-glass-border) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 var(--forge-glass-highlight) !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.routine-tile:hover,
+.start-card:hover {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 20px var(--forge-gold-glow) !important;
+}
+
+/* Workout Active Header Ambient Glow */
+.workout-header {
+  background: rgba(13, 16, 21, 0.9) !important;
+  backdrop-filter: blur(20px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
+  border-bottom: 1px solid var(--forge-glass-border) !important;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5) !important;
+  position: relative;
+}
+
+.workout-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* =========================================================================
+   2. Set Completion "Hit" Animation & Tactile Glow
+   ========================================================================= */
+
+.check-set {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.check-set:active {
+  transform: scale(0.86) !important;
+}
+
+.set-row {
+  transition: background-color 0.25s ease, box-shadow 0.25s ease, opacity 0.2s ease !important;
+}
+
+.set-row.completed {
+  background: rgba(34, 197, 94, 0.08) !important;
+  box-shadow: inset 2.5px 0 0 #22c55e, 0 1px 6px rgba(0,0,0,0.2) !important;
+}
+
+.set-row.completed .check-set {
+  animation: checkmark-hit-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.45) !important;
+}
+
+.set-row.completed input {
+  color: #9ca3af !important;
+  text-decoration: line-through rgba(156, 163, 175, 0.35);
+}
+
+@keyframes checkmark-hit-pop {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* =========================================================================
+   3. Circular Rest Timer Ring Pulse Animation
+   ========================================================================= */
+
+@keyframes timer-ring-pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.85)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5)); }
+}
+
+/* =========================================================================
+   4. Density Mode: Chalk Mode (Large Touch Targets for Shaky/Chalky Hands)
+   ========================================================================= */
+
+body.chalk-mode .set-row {
+  grid-template-columns: 50px 1fr 1fr 50px 32px !important;
+  gap: 12px !important;
+  padding: 10px 14px !important;
+  min-height: 54px !important;
+}
+
+body.chalk-mode .set-row input {
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  height: 44px !important;
+  border-radius: 8px !important;
+}
+
+body.chalk-mode .check-set {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+}
+
+body.chalk-mode .exercise-card-head {
+  padding: 14px 16px !important;
+}
+
+body.chalk-mode .exercise-card-head strong {
+  font-size: 18px !important;
+}
+
+/* =========================================================================
+   5. Athletic Monospace Typography & Tabular Numerals
+   ========================================================================= */
+
+.set-row input,
+.set-number,
+.rest-timer-pill,
+.stat-strip,
+.record-value,
+.date-box,
+.recovery-metric,
+.overload-tag {
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: "tnum" 1, "zero" 1 !important;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace !important;
+}
+
+.eyebrow {
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  font-weight: 800 !important;
+  font-size: 10.5px !important;
+}
+
+/* =========================================================================
+   Responsive Main content padding on mobile
+   ========================================================================= */
+
 @media (max-width: 640px) {
   .main-content {
     padding: 20px 16px 40px !important;
@@ -87,7 +265,7 @@ body {
   }
 }
 
-/* Fast tap interaction on interactive controls only (DO NOT apply to cards/tiles to prevent trapping desktop mouse wheel) */
+/* Fast tap interaction */
 button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -113,11 +291,7 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
   bottom: calc(96px + var(--sab)) !important;
 }
 
-/* =========================================================================
-   Ergonomic Touch Targets & A11y Polish
-   ========================================================================= */
-
-/* Topbar controls touch target expansion (min-height 40px) */
+/* Topbar controls touch target expansion */
 .topbar button, .topbar .icon-button, .rest-timer-pill {
   min-height: 40px !important;
   display: inline-flex !important;
@@ -146,8 +320,6 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
     justify-content: center !important;
     font-size: 12px !important;
   }
-  
-  /* Modal navigation buttons touch clearance */
   .neeraj-protocol-modal button {
     min-height: 40px !important;
   }
