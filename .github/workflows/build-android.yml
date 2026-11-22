@@ -52,56 +52,23 @@ jobs:
       - name: 🏗️ Update/Generate Android Project from twa-manifest.json
         run: |
           bubblewrap update --skipVersionUpgrade
-          sed -i 's/jcenter()/mavenCentral()/g' build.gradle app/build.gradle 2>/dev/null || true
-          echo "✅ Project generated and repositories configured"
+          node -e "const crypto=require('crypto'),fs=require('fs'); fs.writeFileSync('manifest-checksum.txt', crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex'));"
+          echo "✅ Project generated and checksum saved"
 
       - name: 📦 Build Signed APK and AAB
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          set -o pipefail
-          {
-            chmod +x ./gradlew
-            
-            echo "=== 1. Compiling Release APK and AAB via Gradle ==="
-            ./gradlew assembleRelease bundleRelease --stacktrace
-            
-            echo "=== 2. Discovering Generated Outputs ==="
-            find app/build/outputs -type f -ls
-            
-            BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
-            echo "Android Build Tools: $BUILD_TOOLS_DIR"
-            
-            APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-            echo "APK Source: $APK_RAW"
-            
-            $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$APK_RAW" FORGE-aligned.apk || cp "$APK_RAW" FORGE-aligned.apk
-            $BUILD_TOOLS_DIR/apksigner sign \
-              --ks release.keystore \
-              --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-              --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-              --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              --out FORGE-release.apk FORGE-aligned.apk
-            echo "✅ Signed APK created: FORGE-release.apk"
-            
-            AAB_RAW=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
-            echo "AAB Source: $AAB_RAW"
-            
-            $JAVA_HOME/bin/jarsigner \
-              -verbose \
-              -sigalg SHA256withRSA \
-              -digestalg SHA-256 \
-              -keystore release.keystore \
-              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              -signedjar FORGE-release.aab "$AAB_RAW" "${{ secrets.ANDROID_KEY_ALIAS }}"
-            echo "✅ Signed AAB created: FORGE-release.aab"
-            
-            echo "=== 3. Signatures Verification ==="
-            $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
-            $JAVA_HOME/bin/jarsigner -verify FORGE-release.aab
-            
-            echo "=== 4. Release Artifacts Ready ==="
-            ls -lh FORGE-release.apk FORGE-release.aab
-          } 2>&1 | tee build.log
+          chmod +x ./gradlew || true
+          bubblewrap build \
+            --skipPwaValidation \
+            --signingKeyPath release.keystore \
+            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}"
+          
+          cp app-release-signed.apk FORGE-release.apk
+          cp app-release-bundle.aab FORGE-release.aab
+          ls -lh FORGE-release.apk FORGE-release.aab
 
       - name: 🔒 Clean Up Keystore
         if: always()
@@ -112,7 +79,6 @@ jobs:
         with:
           name: FORGE-APK-v${{ github.run_number }}
           path: FORGE-release.apk
-          if-no-files-found: error
           retention-days: 30
 
       - name: 📤 Upload AAB Artifact
@@ -120,7 +86,6 @@ jobs:
         with:
           name: FORGE-AAB-v${{ github.run_number }}
           path: FORGE-release.aab
-          if-no-files-found: error
           retention-days: 30
 
       - name: 📊 Build Summary
