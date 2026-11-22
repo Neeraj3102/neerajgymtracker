@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://neerajtracker.netlify.app/"><strong>🚀 Launch Live App »</strong></a>
+  <a href="https://neerajgymtracker.vercel.app/"><strong>🚀 Launch Live App »</strong></a>
   ·
   <a href="https://github.com/Neeraj3102/neerajgymtracker/stargazers"><strong>⭐️ Star on GitHub</strong></a>
   ·

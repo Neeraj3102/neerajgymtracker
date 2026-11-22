@@ -14,9 +14,8 @@ coverage/
 .env.production.local
 *.env.json
 
-# Vercel and Netlify build outputs
+# Vercel build outputs
 .vercel/
-.netlify/
 
 # Editor and OS junk
 .DS_Store
