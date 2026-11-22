@@ -14,7 +14,7 @@ last_mapped_at: 2026-11-21
 
 **Functions:**
 - camelCase for helper and business logic functions: `isNeerajProfile`, `seedNeerajPplPlan`, `getProtocolForRoutine`, `syncAllWithSupabase`, `playTimerDoneSound`.
-- PascalCase for React components: `NeerajPlanBanner`, `NeerajProtocolModal`, `RestTimer`, `ProfileSwitcher`, `StreakBadge`.
+- PascalCase for React components: `NeerajPlanBanner`, `NeerajProtocolModal`, `RestTimer`, `ProfileSwitcher`.
 
 **Variables:**
 - camelCase for mutable and local variables: `activeProfileId`, `isStarting`, `secondsLeft`, `cleanPayload`.
