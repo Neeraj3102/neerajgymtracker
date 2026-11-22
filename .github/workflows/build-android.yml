@@ -62,7 +62,7 @@ jobs:
 
       - name: 🔑 Decode Signing Keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | tr -d '\r\n\t ' | base64 --decode > release.keystore
           echo "✅ Keystore decoded successfully"
 
       - name: 🏗️ Update/Generate Android Project from twa-manifest.json
@@ -78,7 +78,11 @@ jobs:
         run: |
           chmod +x ./gradlew || true
           
-          # Patch Bubblewrap CLI password quoting bug directly before build
+          # Strip accidental tabs or spaces from secrets
+          export BUBBLEWRAP_KEYSTORE_PASSWORD=$(echo "$BUBBLEWRAP_KEYSTORE_PASSWORD" | tr -d '\r\n\t ')
+          export BUBBLEWRAP_KEY_PASSWORD=$(echo "$BUBBLEWRAP_KEY_PASSWORD" | tr -d '\r\n\t ')
+          
+          # Patch Bubblewrap CLI password quoting and argument bug
           node patch-bubblewrap.js
           
           if ! bubblewrap build \
