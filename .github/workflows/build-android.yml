@@ -29,7 +29,7 @@ jobs:
       - name: 📱 Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-33 build-tools;33.0.2'
+          packages: 'platforms;android-36 build-tools;36.1.0'
 
       - name: 🛠️ Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
@@ -61,8 +61,47 @@ jobs:
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew || true
-          bubblewrap build --skipPwaValidation
-          ls -lh *.apk *.aab || true
+          
+          # Attempt Bubblewrap build with explicit key parameters
+          bubblewrap build \
+            --skipPwaValidation \
+            --signingKeyPath release.keystore \
+            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" || true
+
+          # Direct fallback if Bubblewrap CLI hit prompts or signing flags
+          if [ ! -f "app-release-signed.apk" ]; then
+            echo "Running direct Gradle compile..."
+            ./gradlew assembleRelease bundleRelease || true
+            
+            BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
+            echo "Using build tools from $BUILD_TOOLS_DIR"
+            
+            UNSIGNED_APK=$(find . -name "*release-unsigned.apk" -o -name "*release.apk" 2>/dev/null | head -n 1)
+            if [ -n "$UNSIGNED_APK" ] && [ -f "$UNSIGNED_APK" ]; then
+              $BUILD_TOOLS_DIR/zipalign -v -p 4 "$UNSIGNED_APK" app-aligned.apk || cp "$UNSIGNED_APK" app-aligned.apk
+              $BUILD_TOOLS_DIR/apksigner sign \
+                --ks release.keystore \
+                --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+                --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+                --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+                --out app-release-signed.apk app-aligned.apk
+              echo "✅ app-release-signed.apk created"
+            fi
+            
+            UNSIGNED_AAB=$(find . -name "*.aab" 2>/dev/null | head -n 1)
+            if [ -n "$UNSIGNED_AAB" ] && [ -f "$UNSIGNED_AAB" ]; then
+              jarsigner -verbose \
+                -sigalg SHA256withRSA \
+                -digestalg SHA-256 \
+                -keystore release.keystore \
+                -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+                -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+                -signedjar app-release-bundle.aab "$UNSIGNED_AAB" "${{ secrets.ANDROID_KEY_ALIAS }}"
+              echo "✅ app-release-bundle.aab created"
+            fi
+          fi
+
+          ls -lh *.apk *.aab 2>/dev/null || true
 
       - name: 🔒 Clean Up Keystore
         if: always()
