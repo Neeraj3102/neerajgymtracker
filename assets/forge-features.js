@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v32";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v33";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -462,91 +462,8 @@ export function triggerRestTimer(duration = 90) {
 /* =========================================================================
    F2: STREAK COUNTER
    ========================================================================= */
-export function StreakBadge({ workouts = [] }) {
-  const streak = h.useMemo(() => {
-    if (!workouts || workouts.length === 0) return 0;
-    const dates = [
-      ...new Set(
-        workouts
-          .map((w) => w.date)
-          .filter(Boolean)
-          .sort()
-          .reverse()
-      ),
-    ];
-    if (dates.length === 0) return 0;
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
-
-    // If no workout today or yesterday, streak is broken
-    if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {
-      return 0;
-    }
-
-    let count = 0;
-    let expected = new Date(dates[0]);
-
-    for (const dStr of dates) {
-      const d = new Date(dStr);
-      const diffDays = Math.round((expected.getTime() - d.getTime()) / 864e5);
-      if (diffDays === 0) {
-        count++;
-        expected.setDate(expected.getDate() - 1);
-      } else if (diffDays === 1) {
-        count++;
-        expected = new Date(d);
-        expected.setDate(expected.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    return count;
-  }, [workouts]);
-
-  if (streak === 0) {
-    return h.createElement(
-      "div",
-      {
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "4px 10px",
-          background: "#161a17",
-          border: "1px solid #282f2a",
-          borderRadius: "16px",
-          fontSize: "11px",
-          color: "#8b9089",
-          fontWeight: "600",
-        },
-      },
-      h.createElement("span", null, "⚡"),
-      h.createElement("span", null, "Ready to start a streak!")
-    );
-  }
-
-  return h.createElement(
-    "div",
-    {
-      style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "4px 10px",
-        background: "linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.05))",
-        border: "1px solid rgba(249, 115, 22, 0.4)",
-        borderRadius: "16px",
-        fontSize: "11px",
-        color: "#fb923c",
-        fontWeight: "700",
-      },
-    },
-    h.createElement("span", null, "🔥"),
-    h.createElement("span", null, `${streak} Day Streak! Keep the momentum`)
-  );
+export function StreakBadge() {
+  return null;
 }
 
 /* =========================================================================

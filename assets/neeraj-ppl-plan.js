@@ -1,5 +1,5 @@
-import { ExerciseDemoButton } from "./forge-features.js?v=stealth-v32";
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v32";
+import { ExerciseDemoButton } from "./forge-features.js?v=stealth-v33";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v33";
 const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
