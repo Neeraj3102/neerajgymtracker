@@ -72,6 +72,10 @@ jobs:
           echo "✅ Project generated and checksum saved"
 
       - name: 📦 Build and Sign Android APK and AAB
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
           chmod +x ./gradlew || true
           
@@ -90,19 +94,20 @@ jobs:
           echo "Using Android Build Tools from: $BUILD_TOOLS_DIR"
           
           # 2. Locate generated APK (Bubblewrap produces app-release-unsigned-aligned.apk)
+          ls -la
           RAW_APK=""
           if [ -f "app-release-unsigned-aligned.apk" ]; then
             RAW_APK="app-release-unsigned-aligned.apk"
           else
-            RAW_APK=$(find . -maxdepth 5 -type f \( -name "*.apk" \) 2>/dev/null | head -n 1)
+            RAW_APK=$(find . -maxdepth 5 -type f -name "*.apk" 2>/dev/null | head -n 1)
           fi
           echo "Found unsigned/aligned APK at: $RAW_APK"
           
           $BUILD_TOOLS_DIR/apksigner sign \
             --ks release.keystore \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD \
             --out FORGE-release.apk \
             "$RAW_APK"
           
@@ -111,7 +116,7 @@ jobs:
           if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
             RAW_AAB="./app/build/outputs/bundle/release/app-release.aab"
           else
-            RAW_AAB=$(find . -maxdepth 5 -type f \( -name "*.aab" \) 2>/dev/null | head -n 1)
+            RAW_AAB=$(find . -maxdepth 5 -type f -name "*.aab" 2>/dev/null | head -n 1)
           fi
           echo "Found unsigned AAB at: $RAW_AAB"
           
@@ -120,11 +125,11 @@ jobs:
             -sigalg SHA256withRSA \
             -digestalg SHA-256 \
             -keystore release.keystore \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            -storepass:env ANDROID_KEYSTORE_PASSWORD \
+            -keypass:env ANDROID_KEY_PASSWORD \
             -signedjar FORGE-release.aab \
             "$RAW_AAB" \
-            "${{ secrets.ANDROID_KEY_ALIAS }}"
+            "$ANDROID_KEY_ALIAS"
           
           # 4. Verify signatures
           $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
