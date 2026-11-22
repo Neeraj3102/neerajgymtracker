@@ -49,16 +49,11 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
           echo "✅ Keystore decoded successfully"
 
-      - name: 🏗️ Initialize TWA Project with Bubblewrap
+      - name: 🏗️ Update/Generate Android Project from twa-manifest.json
         run: |
-          mkdir -p android-twa
-          cp twa-manifest.json android-twa/twa-manifest.json
-          cp release.keystore android-twa/release.keystore
-          cd android-twa
-          bubblewrap update --skipPwaValidation || bubblewrap init --manifest https://neerajgymtracker.vercel.app/manifest.webmanifest --directory . --skipPwaValidation
+          bubblewrap update --skipVersionUpgrade
 
-      - name: 📦 Build APK and AAB
-        working-directory: android-twa
+      - name: 📦 Build Signed APK and AAB
         run: |
           bubblewrap build \
             --skipPwaValidation \
@@ -69,20 +64,24 @@ jobs:
 
       - name: 🔒 Clean Up Keystore
         if: always()
-        run: rm -f release.keystore android-twa/release.keystore && echo "✅ Keystore deleted"
+        run: rm -f release.keystore && echo "✅ Keystore deleted"
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FORGE-APK-v${{ github.run_number }}
-          path: android-twa/*.apk
+          path: |
+            *.apk
+            app/build/outputs/**/*.apk
           retention-days: 30
 
       - name: 📤 Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FORGE-AAB-v${{ github.run_number }}
-          path: android-twa/*.aab
+          path: |
+            *.aab
+            app/build/outputs/**/*.aab
           retention-days: 30
 
       - name: 📊 Build Summary
