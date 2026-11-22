@@ -52,15 +52,17 @@ jobs:
       - name: 🏗️ Update/Generate Android Project from twa-manifest.json
         run: |
           bubblewrap update --skipVersionUpgrade
+          node -e "const crypto=require('crypto'),fs=require('fs'); fs.writeFileSync('manifest-checksum.txt', crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex'));"
+          echo "✅ manifest-checksum.txt generated"
 
       - name: 📦 Build Signed APK and AAB
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          bubblewrap build \
-            --skipPwaValidation \
-            --signingKeyPath release.keystore \
-            --signingKeyPassword "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --signingKeyAliasPassword "${{ secrets.ANDROID_KEY_PASSWORD }}"
+          chmod +x ./gradlew || true
+          bubblewrap build --skipPwaValidation
+          ls -lh *.apk *.aab || true
 
       - name: 🔒 Clean Up Keystore
         if: always()
@@ -71,6 +73,7 @@ jobs:
         with:
           name: FORGE-APK-v${{ github.run_number }}
           path: |
+            app-release-signed.apk
             *.apk
             app/build/outputs/**/*.apk
           retention-days: 30
@@ -80,6 +83,7 @@ jobs:
         with:
           name: FORGE-AAB-v${{ github.run_number }}
           path: |
+            app-release-bundle.aab
             *.aab
             app/build/outputs/**/*.aab
           retention-days: 30
