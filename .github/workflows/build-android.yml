@@ -52,56 +52,64 @@ jobs:
       - name: 🏗️ Update/Generate Android Project from twa-manifest.json
         run: |
           bubblewrap update --skipVersionUpgrade
-          node -e "const crypto=require('crypto'),fs=require('fs'); fs.writeFileSync('manifest-checksum.txt', crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex'));"
-          echo "✅ manifest-checksum.txt generated"
+          sed -i 's/jcenter()/mavenCentral()/g' build.gradle app/build.gradle 2>/dev/null || true
+          echo "✅ Project generated and repositories configured"
 
       - name: 📦 Build Signed APK and AAB
-        env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          chmod +x ./gradlew || true
+          chmod +x ./gradlew
           
-          # Attempt Bubblewrap build with explicit key parameters
-          bubblewrap build \
-            --skipPwaValidation \
-            --signingKeyPath release.keystore \
-            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" || true
-
-          # Direct fallback if Bubblewrap CLI hit prompts or signing flags
-          if [ ! -f "app-release-signed.apk" ]; then
-            echo "Running direct Gradle compile..."
-            ./gradlew assembleRelease bundleRelease || true
-            
-            BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
-            echo "Using build tools from $BUILD_TOOLS_DIR"
-            
-            UNSIGNED_APK=$(find . -name "*release-unsigned.apk" -o -name "*release.apk" 2>/dev/null | head -n 1)
-            if [ -n "$UNSIGNED_APK" ] && [ -f "$UNSIGNED_APK" ]; then
-              $BUILD_TOOLS_DIR/zipalign -v -p 4 "$UNSIGNED_APK" app-aligned.apk || cp "$UNSIGNED_APK" app-aligned.apk
+          echo "=== 1. Building Release APK and AAB via Gradle ==="
+          ./gradlew assembleRelease bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/release.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+          
+          echo "=== 2. Discovering outputs ==="
+          find app/build/outputs -type f -name "*.apk" -o -name "*.aab"
+          
+          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
+          echo "Android Build Tools: $BUILD_TOOLS_DIR"
+          
+          # Find generated APK
+          RAW_APK=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          echo "Found APK: $RAW_APK"
+          if [ -n "$RAW_APK" ] && [ -f "$RAW_APK" ]; then
+            # Verify if already signed, or sign with apksigner
+            if $BUILD_TOOLS_DIR/apksigner verify "$RAW_APK" 2>/dev/null; then
+              echo "APK is already signed by Gradle injection!"
+              cp "$RAW_APK" app-release-signed.apk
+            else
+              echo "Signing APK with apksigner..."
+              $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$RAW_APK" app-release-aligned.apk || cp "$RAW_APK" app-release-aligned.apk
               $BUILD_TOOLS_DIR/apksigner sign \
                 --ks release.keystore \
                 --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
                 --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
                 --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-                --out app-release-signed.apk app-aligned.apk
-              echo "✅ app-release-signed.apk created"
+                --out app-release-signed.apk app-release-aligned.apk
             fi
-            
-            UNSIGNED_AAB=$(find . -name "*.aab" 2>/dev/null | head -n 1)
-            if [ -n "$UNSIGNED_AAB" ] && [ -f "$UNSIGNED_AAB" ]; then
-              jarsigner -verbose \
-                -sigalg SHA256withRSA \
-                -digestalg SHA-256 \
-                -keystore release.keystore \
-                -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-                -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-                -signedjar app-release-bundle.aab "$UNSIGNED_AAB" "${{ secrets.ANDROID_KEY_ALIAS }}"
-              echo "✅ app-release-bundle.aab created"
-            fi
+            echo "✅ app-release-signed.apk ready"
+          fi
+          
+          # Find generated AAB
+          RAW_AAB=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
+          echo "Found AAB: $RAW_AAB"
+          if [ -n "$RAW_AAB" ] && [ -f "$RAW_AAB" ]; then
+            jarsigner -verify "$RAW_AAB" 2>/dev/null && echo "AAB verified signed" || \
+            jarsigner -verbose \
+              -sigalg SHA256withRSA \
+              -digestalg SHA-256 \
+              -keystore release.keystore \
+              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+              -signedjar app-release-bundle.aab "$RAW_AAB" "${{ secrets.ANDROID_KEY_ALIAS }}"
+            [ ! -f "app-release-bundle.aab" ] && cp "$RAW_AAB" app-release-bundle.aab
+            echo "✅ app-release-bundle.aab ready"
           fi
 
-          ls -lh *.apk *.aab 2>/dev/null || true
+          ls -lh app-release-signed.apk app-release-bundle.aab
 
       - name: 🔒 Clean Up Keystore
         if: always()
