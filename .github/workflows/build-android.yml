@@ -29,7 +29,7 @@ jobs:
       - name: 📱 Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
+          packages: 'platforms;android-36 build-tools;34.0.0'
 
       - name: 🛠️ Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
@@ -51,7 +51,7 @@ jobs:
           # Auto-accept all Android SDK licenses
           yes | sdkmanager --licenses 2>/dev/null || true
           
-          # Symlink pre-installed 34.0.0 to 36.1.0 to satisfy Bubblewrap checkBuildTools()
+          # Symlink pre-installed build-tools to 36.1.0 to satisfy Bubblewrap checkBuildTools()
           LATEST_BT=$(ls -d ${ANDROID_HOME}/build-tools/* 2>/dev/null | sort -V | tail -n 1)
           if [ -n "$LATEST_BT" ] && [ ! -d "${ANDROID_HOME}/build-tools/36.1.0" ]; then
             echo "Symlinking $LATEST_BT to ${ANDROID_HOME}/build-tools/36.1.0"
@@ -68,11 +68,6 @@ jobs:
       - name: 🏗️ Update/Generate Android Project from twa-manifest.json
         run: |
           bubblewrap update --skipVersionUpgrade
-          
-          # Target stable Android 34 SDK
-          sed -i 's/compileSdkVersion 36/compileSdkVersion 34/g' app/build.gradle 2>/dev/null || true
-          sed -i 's/targetSdkVersion 36/targetSdkVersion 34/g' app/build.gradle 2>/dev/null || true
-          
           node -e "const crypto=require('crypto'),fs=require('fs'); fs.writeFileSync('manifest-checksum.txt', crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex'));"
           echo "✅ Project generated and checksum saved"
 
@@ -88,7 +83,9 @@ jobs:
             --signingKeyPath release.keystore \
             --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" > build.log 2>&1; then
             cat build.log
-            ERR=$(tail -n 15 build.log | tr '\r\n' '  ')
+            ERR=$(sed -n '/\* Where:/,/\* Try:/p' build.log | tr '\r\n' '  ')
+            [ -z "$ERR" ] && ERR=$(grep -A 8 -B 1 "FAILURE: Build failed" build.log | tr '\r\n' '  ')
+            [ -z "$ERR" ] && ERR=$(tail -n 25 build.log | grep -v '^\s*at ' | tr '\r\n' '  ')
             echo "::error title=Bubblewrap Build Failed::$ERR"
             exit 1
           fi
