@@ -324,3 +324,113 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
     min-height: 40px !important;
   }
 }
+
+/* =========================================================================
+   6. Mobile Keyboard & Focus Management (Prevents Bottom Nav Occlusion)
+   ========================================================================= */
+
+@media (max-width: 768px) {
+  /* Auto-hide floating navigation while typing to prevent obscuring inputs or keyboard */
+  body:has(.workout-content input:focus, .workout-content textarea:focus, .form-modal input:focus, .form-modal textarea:focus, .picker-modal input:focus, .search-field input:focus) .bottom-nav {
+    transform: translate(-50%, 150%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+  }
+}
+
+/* =========================================================================
+   7. Touch Target & Small Screen (<380px) Ergonomics
+   ========================================================================= */
+
+.delete-set {
+  min-width: 38px !important;
+  min-height: 38px !important;
+  touch-action: manipulation !important;
+  cursor: pointer !important;
+}
+
+.row-actions button,
+.routine-card-actions > button:not(.primary-button) {
+  min-width: 42px !important;
+  min-height: 42px !important;
+}
+
+@media (max-width: 375px) {
+  .set-labels {
+    grid-template-columns: 32px 1fr 1fr 36px !important;
+    padding: 8px 36px 4px 10px !important;
+    gap: 4px !important;
+  }
+  .set-row {
+    grid-template-columns: 32px 1fr 1fr 36px 26px !important;
+    gap: 4px !important;
+    padding: 4px 6px !important;
+  }
+  .set-row input {
+    padding: 4px !important;
+    font-size: 15px !important;
+  }
+  .stat-strip > div {
+    padding: 16px 6px !important;
+  }
+  .stat-strip strong {
+    font-size: 20px !important;
+  }
+}
+
+/* Bottom Sheet Polish for Mobile */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .picker-modal,
+  .form-modal,
+  .start-modal,
+  .neeraj-protocol-modal {
+    width: 100% !important;
+    max-height: calc(88vh - var(--sab)) !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+    padding: 20px 16px calc(24px + var(--sab)) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7) !important;
+  }
+}
+
+/* =========================================================================
+   8. Client-Side Rendering Performance & GPU Acceleration
+   ========================================================================= */
+
+/* Skip offscreen layout/paint overhead for long workout histories & exercise lists */
+.history-list article,
+.exercise-library-grid article,
+.routine-card,
+.recent-list button {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 85px;
+}
+
+/* Smooth kinetic flick scrolling */
+.routine-rail,
+.filter-chips {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+
+.routine-tile {
+  scroll-snap-align: start;
+}
+
+/* Hardware compositing for fixed UI chrome */
+.topbar,
+.bottom-nav,
+.workout-header,
+.toast {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+

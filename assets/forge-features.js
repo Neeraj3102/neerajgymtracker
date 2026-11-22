@@ -1,4 +1,4 @@
-import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v33";
+import { r as importedReact } from "./index-CiCrIMMp.js?v=stealth-v35";
 export const h = new Proxy({}, {
   get(_, prop) {
     const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
@@ -93,7 +93,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
         },
         style: {
           position: "fixed",
-          bottom: "76px",
+          bottom: "calc(88px + var(--sab, 0px))",
           right: "16px",
           zIndex: 999,
           background: "rgba(18, 22, 28, 0.85)",
@@ -139,7 +139,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
         onClick: () => setIsMinimized(false),
         style: {
           position: "fixed",
-          bottom: "76px",
+          bottom: "calc(88px + var(--sab, 0px))",
           right: "16px",
           zIndex: 999,
           background: secondsLeft === 0 ? "rgba(22, 101, 52, 0.9)" : "rgba(18, 22, 28, 0.9)",
@@ -170,7 +170,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
     {
       style: {
         position: "fixed",
-        bottom: "76px",
+        bottom: "calc(88px + var(--sab, 0px))",
         left: "50%",
         transform: "translateX(-50%)",
         width: "calc(100% - 32px)",
