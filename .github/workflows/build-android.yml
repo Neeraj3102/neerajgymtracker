@@ -44,6 +44,10 @@ jobs:
           }
           EOF
           
+          # Fix Bubblewrap legacy AndroidSdkTools.validatePath() check
+          mkdir -p "${ANDROID_HOME}/tools"
+          ln -sf "${ANDROID_HOME}/cmdline-tools/latest/bin" "${ANDROID_HOME}/bin" 2>/dev/null || true
+          
           # Auto-accept all Android SDK licenses
           yes | sdkmanager --licenses 2>/dev/null || true
           
@@ -54,6 +58,7 @@ jobs:
             ln -sf "$LATEST_BT" "${ANDROID_HOME}/build-tools/36.1.0"
           fi
           ls -la "${ANDROID_HOME}/build-tools"
+          echo "✅ Android SDK and Bubblewrap configured"
 
       - name: 🔑 Decode Signing Keystore
         run: |
