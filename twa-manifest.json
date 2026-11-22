@@ -32,5 +32,8 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://neerajgymtracker.vercel.app/",
   "minSdkVersion": 21,
+  "splashScreenFadeOutDuration": 300,
+  "fallbackType": "customtabs",
+  "shortcuts": [],
   "generatorApp": "bubblewrap-cli"
 }
