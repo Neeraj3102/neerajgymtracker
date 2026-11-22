@@ -51,11 +51,11 @@ jobs:
           # Auto-accept all Android SDK licenses
           yes | sdkmanager --licenses 2>/dev/null || true
           
-          # Symlink pre-installed build-tools to 36.1.0 to satisfy Bubblewrap checkBuildTools()
+          # Copy pre-installed build-tools to 36.1.0 to satisfy Bubblewrap checkBuildTools() without symlink breakage
           LATEST_BT=$(ls -d ${ANDROID_HOME}/build-tools/* 2>/dev/null | sort -V | tail -n 1)
           if [ -n "$LATEST_BT" ] && [ ! -d "${ANDROID_HOME}/build-tools/36.1.0" ]; then
-            echo "Symlinking $LATEST_BT to ${ANDROID_HOME}/build-tools/36.1.0"
-            ln -sf "$LATEST_BT" "${ANDROID_HOME}/build-tools/36.1.0"
+            echo "Copying $LATEST_BT to ${ANDROID_HOME}/build-tools/36.1.0"
+            cp -r "$LATEST_BT" "${ANDROID_HOME}/build-tools/36.1.0"
           fi
           ls -la "${ANDROID_HOME}/build-tools"
           echo "✅ Android SDK and Bubblewrap configured"
@@ -71,16 +71,20 @@ jobs:
           node -e "const crypto=require('crypto'),fs=require('fs'); fs.writeFileSync('manifest-checksum.txt', crypto.createHash('sha1').update(fs.readFileSync('twa-manifest.json')).digest('hex'));"
           echo "✅ Project generated and checksum saved"
 
-      - name: 📦 Build and Sign Android APK and AAB
+      - name: 📦 Build Signed APK and AAB
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew || true
           
-          # 1. Bubblewrap build without internal signing (avoids apksigner quote bug)
-          if ! bubblewrap build --skipSigning --skipPwaValidation > build.log 2>&1; then
+          # Patch Bubblewrap CLI password quoting bug directly before build
+          node patch-bubblewrap.js
+          
+          if ! bubblewrap build \
+            --skipPwaValidation \
+            --signingKeyPath release.keystore \
+            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" > build.log 2>&1; then
             cat build.log
             ERR=$(sed -n '/\* Where:/,/\* Try:/p' build.log | tr '\r\n' '  ')
             [ -z "$ERR" ] && ERR=$(grep -A 8 -B 1 "FAILURE: Build failed" build.log | tr '\r\n' '  ')
@@ -88,52 +92,10 @@ jobs:
             echo "::error title=Bubblewrap Build Failed::$ERR"
             exit 1
           fi
+          
           cat build.log
-          
-          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
-          echo "Using Android Build Tools from: $BUILD_TOOLS_DIR"
-          
-          # 2. Locate generated APK (Bubblewrap produces app-release-unsigned-aligned.apk)
-          ls -la
-          RAW_APK=""
-          if [ -f "app-release-unsigned-aligned.apk" ]; then
-            RAW_APK="app-release-unsigned-aligned.apk"
-          else
-            RAW_APK=$(find . -maxdepth 5 -type f -name "*.apk" 2>/dev/null | head -n 1)
-          fi
-          echo "Found unsigned/aligned APK at: $RAW_APK"
-          
-          $BUILD_TOOLS_DIR/apksigner sign \
-            --ks release.keystore \
-            --ks-key-alias "$ANDROID_KEY_ALIAS" \
-            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
-            --key-pass env:ANDROID_KEY_PASSWORD \
-            --out FORGE-release.apk \
-            "$RAW_APK"
-          
-          # 3. Locate generated AAB (Bubblewrap produces app/build/outputs/bundle/release/app-release.aab)
-          RAW_AAB=""
-          if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
-            RAW_AAB="./app/build/outputs/bundle/release/app-release.aab"
-          else
-            RAW_AAB=$(find . -maxdepth 5 -type f -name "*.aab" 2>/dev/null | head -n 1)
-          fi
-          echo "Found unsigned AAB at: $RAW_AAB"
-          
-          $JAVA_HOME/bin/jarsigner \
-            -verbose \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -keystore release.keystore \
-            -storepass:env ANDROID_KEYSTORE_PASSWORD \
-            -keypass:env ANDROID_KEY_PASSWORD \
-            -signedjar FORGE-release.aab \
-            "$RAW_AAB" \
-            "$ANDROID_KEY_ALIAS"
-          
-          # 4. Verify signatures
-          $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
-          $JAVA_HOME/bin/jarsigner -verify FORGE-release.aab
+          cp app-release-signed.apk FORGE-release.apk
+          cp app-release-bundle.aab FORGE-release.aab
           ls -lh FORGE-release.apk FORGE-release.aab
 
       - name: 🔒 Clean Up Keystore
