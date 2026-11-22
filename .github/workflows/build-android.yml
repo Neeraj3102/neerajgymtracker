@@ -57,50 +57,51 @@ jobs:
 
       - name: 📦 Build Signed APK and AAB
         run: |
-          chmod +x ./gradlew
-          
-          echo "=== 1. Building Release APK and AAB via Gradle ==="
-          ./gradlew assembleRelease bundleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/release.keystore \
-            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
-          
-          echo "=== 2. Discovering outputs ==="
-          find app/build/outputs -type f
-          
-          BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
-          echo "Android Build Tools: $BUILD_TOOLS_DIR"
-          
-          APK_SRC=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          echo "Found APK source: $APK_SRC"
-          
-          # Align and Sign APK
-          $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$APK_SRC" FORGE-aligned.apk || cp "$APK_SRC" FORGE-aligned.apk
-          $BUILD_TOOLS_DIR/apksigner sign \
-            --ks release.keystore \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out FORGE-release.apk FORGE-aligned.apk
-          
-          # Sign AAB using JDK jarsigner
-          AAB_SRC=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
-          echo "Found AAB source: $AAB_SRC"
-          
-          $JAVA_HOME/bin/jarsigner \
-            -verbose \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -keystore release.keystore \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            -signedjar FORGE-release.aab "$AAB_SRC" "${{ secrets.ANDROID_KEY_ALIAS }}"
-          
-          echo "=== 3. Verification & Listing ==="
-          $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
-          $JAVA_HOME/bin/jarsigner -verify FORGE-release.aab
-          ls -lh FORGE-release.apk FORGE-release.aab
+          set -o pipefail
+          {
+            chmod +x ./gradlew
+            
+            echo "=== 1. Compiling Release APK and AAB via Gradle ==="
+            ./gradlew assembleRelease bundleRelease --stacktrace
+            
+            echo "=== 2. Discovering Generated Outputs ==="
+            find app/build/outputs -type f -ls
+            
+            BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
+            echo "Android Build Tools: $BUILD_TOOLS_DIR"
+            
+            APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+            echo "APK Source: $APK_RAW"
+            
+            $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$APK_RAW" FORGE-aligned.apk || cp "$APK_RAW" FORGE-aligned.apk
+            $BUILD_TOOLS_DIR/apksigner sign \
+              --ks release.keystore \
+              --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+              --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+              --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+              --out FORGE-release.apk FORGE-aligned.apk
+            echo "✅ Signed APK created: FORGE-release.apk"
+            
+            AAB_RAW=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+            echo "AAB Source: $AAB_RAW"
+            
+            $JAVA_HOME/bin/jarsigner \
+              -verbose \
+              -sigalg SHA256withRSA \
+              -digestalg SHA-256 \
+              -keystore release.keystore \
+              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+              -signedjar FORGE-release.aab "$AAB_RAW" "${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "✅ Signed AAB created: FORGE-release.aab"
+            
+            echo "=== 3. Signatures Verification ==="
+            $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
+            $JAVA_HOME/bin/jarsigner -verify FORGE-release.aab
+            
+            echo "=== 4. Release Artifacts Ready ==="
+            ls -lh FORGE-release.apk FORGE-release.aab
+          } 2>&1 | tee build.log
 
       - name: 🔒 Clean Up Keystore
         if: always()
@@ -123,10 +124,19 @@ jobs:
           retention-days: 30
 
       - name: 📊 Build Summary
+        if: always()
         run: |
-          echo "## 🏋️ FORGE Android Build Complete!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Output | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| APK (Side-load) | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-          echo "| AAB (Play Store) | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏋️ FORGE Android Build Status" >> $GITHUB_STEP_SUMMARY
+          if [ -f "FORGE-release.apk" ] && [ -f "FORGE-release.aab" ]; then
+            echo "### ✅ Build & Signature Completed Successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Package | File | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| APK (Side-load / Direct Install) | \`FORGE-release.apk\` | $(ls -lh FORGE-release.apk | awk '{print $5}') |" >> $GITHUB_STEP_SUMMARY
+            echo "| AAB (Google Play Store Bundle) | \`FORGE-release.aab\` | $(ls -lh FORGE-release.aab | awk '{print $5}') |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Build Log Output" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 80 build.log 2>/dev/null >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
