@@ -77,11 +77,18 @@ jobs:
           BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew || true
-          bubblewrap build \
+          
+          if ! bubblewrap build \
             --skipPwaValidation \
             --signingKeyPath release.keystore \
-            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}"
+            --signingKeyAlias "${{ secrets.ANDROID_KEY_ALIAS }}" > build.log 2>&1; then
+            cat build.log
+            ERR=$(tail -n 15 build.log | tr '\r\n' '  ')
+            echo "::error title=Bubblewrap Build Failed::$ERR"
+            exit 1
+          fi
           
+          cat build.log
           cp app-release-signed.apk FORGE-release.apk
           cp app-release-bundle.aab FORGE-release.aab
           ls -lh FORGE-release.apk FORGE-release.aab
