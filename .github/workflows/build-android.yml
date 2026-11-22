@@ -67,45 +67,39 @@ jobs:
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
           
           echo "=== 2. Discovering outputs ==="
-          find app/build/outputs -type f -name "*.apk" -o -name "*.aab"
-          
-          APK_SRC=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          AAB_SRC=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
-          
-          echo "Found APK source: $APK_SRC"
-          echo "Found AAB source: $AAB_SRC"
-          
-          cp "$APK_SRC" FORGE-release.apk
-          cp "$AAB_SRC" FORGE-release.aab
+          find app/build/outputs -type f
           
           BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
           echo "Android Build Tools: $BUILD_TOOLS_DIR"
           
-          # Ensure APK is properly aligned and signed
-          if ! $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk 2>/dev/null; then
-            echo "Signing APK with apksigner..."
-            $BUILD_TOOLS_DIR/zipalign -v -f -p 4 FORGE-release.apk FORGE-aligned.apk || cp FORGE-release.apk FORGE-aligned.apk
-            $BUILD_TOOLS_DIR/apksigner sign \
-              --ks release.keystore \
-              --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-              --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-              --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              --out FORGE-release.apk FORGE-aligned.apk
-          fi
+          APK_SRC=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          echo "Found APK source: $APK_SRC"
           
-          # Ensure AAB is signed
-          if ! jarsigner -verify FORGE-release.aab 2>/dev/null; then
-            echo "Signing AAB with jarsigner..."
-            jarsigner \
-              -keystore release.keystore \
-              -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-              -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              FORGE-release.aab "${{ secrets.ANDROID_KEY_ALIAS }}"
-          fi
+          # Align and Sign APK
+          $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$APK_SRC" FORGE-aligned.apk || cp "$APK_SRC" FORGE-aligned.apk
+          $BUILD_TOOLS_DIR/apksigner sign \
+            --ks release.keystore \
+            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            --out FORGE-release.apk FORGE-aligned.apk
+          
+          # Sign AAB using JDK jarsigner
+          AAB_SRC=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
+          echo "Found AAB source: $AAB_SRC"
+          
+          $JAVA_HOME/bin/jarsigner \
+            -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore release.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            -signedjar FORGE-release.aab "$AAB_SRC" "${{ secrets.ANDROID_KEY_ALIAS }}"
           
           echo "=== 3. Verification & Listing ==="
-          $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk || true
-          jarsigner -verify FORGE-release.aab || true
+          $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
+          $JAVA_HOME/bin/jarsigner -verify FORGE-release.aab
           ls -lh FORGE-release.apk FORGE-release.aab
 
       - name: 🔒 Clean Up Keystore
