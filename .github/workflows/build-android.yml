@@ -89,20 +89,32 @@ jobs:
           BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
           echo "Using Android Build Tools from: $BUILD_TOOLS_DIR"
           
-          # 2. Locate generated APK and sign with apksigner
-          RAW_APK=$(find . -name "*release-unsigned.apk" -o -name "*release.apk" 2>/dev/null | head -n 1)
-          echo "Found unsigned APK at: $RAW_APK"
-          $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$RAW_APK" FORGE-aligned.apk || cp "$RAW_APK" FORGE-aligned.apk
+          # 2. Locate generated APK (Bubblewrap produces app-release-unsigned-aligned.apk)
+          RAW_APK=""
+          if [ -f "app-release-unsigned-aligned.apk" ]; then
+            RAW_APK="app-release-unsigned-aligned.apk"
+          else
+            RAW_APK=$(find . -maxdepth 5 -type f \( -name "*.apk" \) 2>/dev/null | head -n 1)
+          fi
+          echo "Found unsigned/aligned APK at: $RAW_APK"
+          
           $BUILD_TOOLS_DIR/apksigner sign \
             --ks release.keystore \
             --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
             --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out FORGE-release.apk FORGE-aligned.apk
+            --out FORGE-release.apk \
+            "$RAW_APK"
           
-          # 3. Locate generated AAB and sign with jarsigner
-          RAW_AAB=$(find . -name "*.aab" 2>/dev/null | head -n 1)
+          # 3. Locate generated AAB (Bubblewrap produces app/build/outputs/bundle/release/app-release.aab)
+          RAW_AAB=""
+          if [ -f "./app/build/outputs/bundle/release/app-release.aab" ]; then
+            RAW_AAB="./app/build/outputs/bundle/release/app-release.aab"
+          else
+            RAW_AAB=$(find . -maxdepth 5 -type f \( -name "*.aab" \) 2>/dev/null | head -n 1)
+          fi
           echo "Found unsigned AAB at: $RAW_AAB"
+          
           $JAVA_HOME/bin/jarsigner \
             -verbose \
             -sigalg SHA256withRSA \
@@ -110,7 +122,9 @@ jobs:
             -keystore release.keystore \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            -signedjar FORGE-release.aab "$RAW_AAB" "${{ secrets.ANDROID_KEY_ALIAS }}"
+            -signedjar FORGE-release.aab \
+            "$RAW_AAB" \
+            "${{ secrets.ANDROID_KEY_ALIAS }}"
           
           # 4. Verify signatures
           $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk
