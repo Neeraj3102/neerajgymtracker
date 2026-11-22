@@ -69,47 +69,44 @@ jobs:
           echo "=== 2. Discovering outputs ==="
           find app/build/outputs -type f -name "*.apk" -o -name "*.aab"
           
+          APK_SRC=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          AAB_SRC=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
+          
+          echo "Found APK source: $APK_SRC"
+          echo "Found AAB source: $AAB_SRC"
+          
+          cp "$APK_SRC" FORGE-release.apk
+          cp "$AAB_SRC" FORGE-release.aab
+          
           BUILD_TOOLS_DIR=$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -n 1)
           echo "Android Build Tools: $BUILD_TOOLS_DIR"
           
-          # Find generated APK
-          RAW_APK=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          echo "Found APK: $RAW_APK"
-          if [ -n "$RAW_APK" ] && [ -f "$RAW_APK" ]; then
-            # Verify if already signed, or sign with apksigner
-            if $BUILD_TOOLS_DIR/apksigner verify "$RAW_APK" 2>/dev/null; then
-              echo "APK is already signed by Gradle injection!"
-              cp "$RAW_APK" app-release-signed.apk
-            else
-              echo "Signing APK with apksigner..."
-              $BUILD_TOOLS_DIR/zipalign -v -f -p 4 "$RAW_APK" app-release-aligned.apk || cp "$RAW_APK" app-release-aligned.apk
-              $BUILD_TOOLS_DIR/apksigner sign \
-                --ks release.keystore \
-                --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-                --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-                --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-                --out app-release-signed.apk app-release-aligned.apk
-            fi
-            echo "✅ app-release-signed.apk ready"
+          # Ensure APK is properly aligned and signed
+          if ! $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk 2>/dev/null; then
+            echo "Signing APK with apksigner..."
+            $BUILD_TOOLS_DIR/zipalign -v -f -p 4 FORGE-release.apk FORGE-aligned.apk || cp FORGE-release.apk FORGE-aligned.apk
+            $BUILD_TOOLS_DIR/apksigner sign \
+              --ks release.keystore \
+              --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
+              --ks-pass "pass:${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+              --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
+              --out FORGE-release.apk FORGE-aligned.apk
           fi
           
-          # Find generated AAB
-          RAW_AAB=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
-          echo "Found AAB: $RAW_AAB"
-          if [ -n "$RAW_AAB" ] && [ -f "$RAW_AAB" ]; then
-            jarsigner -verify "$RAW_AAB" 2>/dev/null && echo "AAB verified signed" || \
-            jarsigner -verbose \
-              -sigalg SHA256withRSA \
-              -digestalg SHA-256 \
+          # Ensure AAB is signed
+          if ! jarsigner -verify FORGE-release.aab 2>/dev/null; then
+            echo "Signing AAB with jarsigner..."
+            jarsigner \
               -keystore release.keystore \
               -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
               -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-              -signedjar app-release-bundle.aab "$RAW_AAB" "${{ secrets.ANDROID_KEY_ALIAS }}"
-            [ ! -f "app-release-bundle.aab" ] && cp "$RAW_AAB" app-release-bundle.aab
-            echo "✅ app-release-bundle.aab ready"
+              FORGE-release.aab "${{ secrets.ANDROID_KEY_ALIAS }}"
           fi
-
-          ls -lh app-release-signed.apk app-release-bundle.aab
+          
+          echo "=== 3. Verification & Listing ==="
+          $BUILD_TOOLS_DIR/apksigner verify FORGE-release.apk || true
+          jarsigner -verify FORGE-release.aab || true
+          ls -lh FORGE-release.apk FORGE-release.aab
 
       - name: 🔒 Clean Up Keystore
         if: always()
@@ -119,20 +116,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FORGE-APK-v${{ github.run_number }}
-          path: |
-            app-release-signed.apk
-            *.apk
-            app/build/outputs/**/*.apk
+          path: FORGE-release.apk
+          if-no-files-found: error
           retention-days: 30
 
       - name: 📤 Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: FORGE-AAB-v${{ github.run_number }}
-          path: |
-            app-release-bundle.aab
-            *.aab
-            app/build/outputs/**/*.aab
+          path: FORGE-release.aab
+          if-no-files-found: error
           retention-days: 30
 
       - name: 📊 Build Summary
