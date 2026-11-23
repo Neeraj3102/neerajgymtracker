@@ -33,7 +33,7 @@
   "fullScopeUrl": "https://neerajgymtracker.vercel.app/",
   "minSdkVersion": 24,
   "splashScreenFadeOutDuration": 300,
-  "fallbackType": "customtabs",
+  "fallbackType": "webview",
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli"
 }
