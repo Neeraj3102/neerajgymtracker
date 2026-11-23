@@ -1,5 +1,5 @@
-// FORGE Bulletproof Offline-First Service Worker (v42)
-const CACHE_NAME = 'forge-pwa-v42';
+// FORGE Bulletproof Offline-First Service Worker (v43)
+const CACHE_NAME = 'forge-pwa-v43';
 const OFFLINE_URL = '/index.html';
 
 const ASSETS_TO_PRECACHE = [
@@ -9,7 +9,11 @@ const ASSETS_TO_PRECACHE = [
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/assets/index-v40.js',
+  '/assets/index-v43.js',
+  '/assets/forge-features-v43.js',
+  '/assets/neeraj-ppl-plan-v43.js',
+  '/assets/profiles-manager-v43.js',
+  '/assets/supabase-client-v43.js',
   '/assets/index-XoPE8YWT.css?v=stealth-v38',
   '/assets/routine-scroll.css?v=stealth-v38',
   '/assets/ppl-groups.css?v=stealth-v38',
