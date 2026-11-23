@@ -1,7 +1,6 @@
-import { r as importedReact } from "./index-CiCrIMMp.js";
 const h = new Proxy({}, {
   get(_, prop) {
-    const activeReact = (typeof window !== "undefined" && window.React) ? window.React : importedReact;
+    const activeReact = (typeof window !== "undefined") ? window.React : null;
     return activeReact ? activeReact[prop] : undefined;
   }
 });
