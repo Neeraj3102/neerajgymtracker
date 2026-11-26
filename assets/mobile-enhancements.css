@@ -68,9 +68,9 @@ body {
 .main-content,
 .workout-content {
   width: 100% !important;
-  max-width: 1240px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   min-width: 0 !important;
   height: auto !important;
   overflow: visible !important;
@@ -85,14 +85,14 @@ body {
 /* Topbar notch & Dynamic Island protection */
 .topbar {
   width: 100% !important;
-  max-width: 1240px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   box-sizing: border-box !important;
   padding-top: var(--sat) !important;
   height: calc(74px + var(--sat)) !important;
-  padding-left: max(28px, var(--sal)) !important;
-  padding-right: max(28px, var(--sar)) !important;
+  padding-left: max(36px, var(--sal)) !important;
+  padding-right: max(36px, var(--sar)) !important;
   background: rgba(9, 10, 13, 0.84) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
@@ -676,9 +676,9 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
   .topbar,
   .main-content,
   .workout-content {
-    max-width: 1240px !important;
-    padding-left: 28px !important;
-    padding-right: 28px !important;
+    max-width: 100% !important;
+    padding-left: 36px !important;
+    padding-right: 36px !important;
   }
 
   .hero-grid {
