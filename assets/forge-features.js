@@ -80,7 +80,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
     };
   }, [isRunning, secondsLeft]);
 
-  if (!isOpen && secondsLeft === 0) {
+  if (!isOpen) {
     return null;
   }
 
