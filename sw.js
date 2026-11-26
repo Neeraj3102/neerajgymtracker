@@ -1,5 +1,5 @@
 // FORGE Bulletproof Offline-First Service Worker (v43)
-const CACHE_NAME = 'forge-pwa-v43';
+const CACHE_NAME = 'forge-pwa-v44';
 const OFFLINE_URL = '/index.html';
 
 const ASSETS_TO_PRECACHE = [

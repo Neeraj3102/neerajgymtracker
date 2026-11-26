@@ -563,3 +563,115 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
   will-change: transform;
 }
 
+
+
+
+/* =========================================================================
+   FORGE Premium Layout & Overlap Polish (Laptop & Mobile Elevation)
+   ========================================================================= */
+
+/* 1. Ensure generous bottom clearance so cards are NEVER covered by floating bars */
+.app-shell {
+  padding-bottom: calc(180px + var(--sab, 0px)) !important;
+}
+
+/* 2. Stat-strip Modern Alignment & Grouping (Fix for awkward number/label separation) */
+.stat-strip > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  padding: 24px 20px !important;
+}
+
+.stat-strip strong {
+  font-size: 36px !important;
+  line-height: 1 !important;
+  margin: 4px 0 2px 0 !important;
+  color: var(--white, #f2f0e8) !important;
+}
+
+.stat-strip small {
+  font-size: 11px !important;
+  color: var(--muted, #8f958e) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0 !important;
+}
+
+.stat-strip span {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  color: var(--lime, #c8ff35) !important;
+  margin-bottom: 2px !important;
+}
+
+/* 3. 1RM Calculator Pill & Quick Start Alignment */
+.calc-1rm-pill {
+  max-width: 260px !important;
+  margin: 12px 0 24px 0 !important;
+  background: rgba(18, 22, 28, 0.75) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--white, #f2f0e8) !important;
+  transition: all 0.2s ease !important;
+}
+
+.calc-1rm-pill:hover {
+  border-color: var(--lime, #c8ff35) !important;
+  color: var(--lime, #c8ff35) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 4. Desktop / Laptop (>= 768px) Overlap & Floating Dock Polish */
+@media (min-width: 768px) {
+  .hero-grid {
+    align-items: center !important;
+    padding-bottom: 36px !important;
+  }
+  
+  .start-card {
+    min-height: 84px !important;
+  }
+
+  /* Keep bottom nav gracefully bounded and elevated on wide screens */
+  .bottom-nav {
+    max-width: 540px !important;
+    bottom: 24px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  .dashboard-columns {
+    gap: 32px !important;
+  }
+}
+
+/* 5. Mobile (<= 640px) Ergonomics */
+@media (max-width: 640px) {
+  .stat-strip > div {
+    padding: 16px 10px !important;
+    gap: 2px !important;
+  }
+  
+  .stat-strip strong {
+    font-size: 24px !important;
+  }
+  
+  .stat-strip small {
+    font-size: 9px !important;
+  }
+  
+  .calc-1rm-pill {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 8px 0 16px 0 !important;
+  }
+  
+  .app-shell {
+    padding-bottom: calc(160px + var(--sab, 0px)) !important;
+  }
+}

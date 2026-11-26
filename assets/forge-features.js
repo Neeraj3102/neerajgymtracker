@@ -81,40 +81,7 @@ export function RestTimer({ active = false, defaultDuration = 90 }) {
   }, [isRunning, secondsLeft]);
 
   if (!isOpen && secondsLeft === 0) {
-    return h.createElement(
-      "button",
-      {
-        onClick: () => {
-          setTotalDuration(90);
-          setSecondsLeft(90);
-          setIsRunning(true);
-          setIsOpen(true);
-        },
-        style: {
-          position: "fixed",
-          bottom: "calc(88px + var(--sab, 0px))",
-          right: "16px",
-          zIndex: 999,
-          background: "rgba(18, 22, 28, 0.85)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          border: "1px solid rgba(245, 158, 11, 0.35)",
-          borderRadius: "24px",
-          padding: "8px 14px",
-          color: "#fbbf24",
-          fontSize: "12px",
-          fontWeight: "800",
-          fontFamily: "monospace",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          cursor: "pointer",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.6), 0 0 12px rgba(245, 158, 11, 0.15)",
-        },
-      },
-      h.createElement("span", null, "⏱️"),
-      h.createElement("span", null, "REST TIMER")
-    );
+    return null;
   }
 
   const mins = Math.floor(secondsLeft / 60);
