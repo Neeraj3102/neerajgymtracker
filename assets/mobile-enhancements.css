@@ -745,3 +745,302 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
     padding-bottom: calc(220px + var(--sab, 0px)) !important;
   }
 }
+
+/* 6. Step 1: Today's Routine Smart Launch Banner & Hero Stack */
+.hero-actions-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.today-routine-card {
+  background: linear-gradient(145deg, rgba(22, 27, 24, 0.92), rgba(13, 16, 15, 0.94)) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  border: 1px solid rgba(200, 255, 53, 0.28) !important;
+  border-top-color: rgba(200, 255, 53, 0.48) !important;
+  border-radius: 16px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.today-routine-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.today-routine-eyebrow {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  color: #c8ff35 !important;
+  text-transform: uppercase !important;
+  font-family: monospace !important;
+}
+
+.today-routine-prev {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #a4aca6 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 2px 8px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+}
+
+.today-routine-body {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+}
+
+.today-routine-info {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+
+.today-routine-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #f4f6f3 !important;
+  line-height: 1.25 !important;
+}
+
+.today-routine-meta {
+  margin: 4px 0 0 0 !important;
+  font-size: 12px !important;
+  color: #9ca3af !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.today-start-btn {
+  min-height: 44px !important;
+  padding: 10px 16px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  background: rgba(200, 255, 53, 0.16) !important;
+  border: 1px solid rgba(200, 255, 53, 0.5) !important;
+  color: #c8ff35 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  touch-action: manipulation !important;
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background 0.16s ease !important;
+}
+
+.today-start-btn:hover {
+  background: #c8ff35 !important;
+  color: #0b0d0c !important;
+}
+
+@media (min-width: 768px) {
+  .hero-grid {
+    grid-template-columns: 1.15fr 0.85fr !important;
+    min-height: 0 !important;
+    padding-bottom: 18px !important;
+    gap: 28px !important;
+  }
+  .start-card {
+    padding: 14px 20px !important;
+    min-height: 64px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .today-routine-card {
+    padding: 14px !important;
+  }
+  .today-routine-body {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .today-routine-info {
+    flex: none !important;
+    width: 100% !important;
+  }
+  .today-start-btn {
+    width: 100% !important;
+    min-height: 46px !important;
+  }
+  .today-routine-meta {
+    white-space: normal !important;
+  }
+}
+
+/* 7. Step 2: Home Tools Row & Workout Plate Calculator Button */
+.home-tools-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 10px 0 20px 0 !important;
+}
+
+.home-tools-row .calc-1rm-pill {
+  margin: 0 !important;
+  min-height: 44px !important;
+}
+
+.workout-tool-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-height: 36px !important;
+  padding: 6px 11px !important;
+  border-radius: 10px !important;
+  background: rgba(200, 255, 53, 0.12) !important;
+  border: 1px solid rgba(200, 255, 53, 0.35) !important;
+  color: #c8ff35 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  touch-action: manipulation !important;
+}
+
+@media (max-width: 640px) {
+  .home-tools-row {
+    gap: 8px !important;
+    margin: 8px 0 16px 0 !important;
+  }
+  .home-tools-row .calc-1rm-pill {
+    flex: 1 1 auto !important;
+    min-height: 44px !important;
+  }
+}
+
+/* 8. Step 3: Progress Analytics Side-by-Side Layout & Muscle Heatmap */
+.progress-analytics-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+  margin: 16px 0 !important;
+  align-items: start !important;
+}
+
+.progress-analytics-grid > section {
+  margin: 0 !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 1024px) {
+  .progress-analytics-grid {
+    grid-template-columns: 0.9fr 1.3fr !important;
+    gap: 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .mannequin-dual-grid {
+    gap: 8px !important;
+  }
+  .heatmap-legend {
+    font-size: 10px !important;
+    gap: 8px 12px !important;
+  }
+  .heatmap-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 9. Step 4: Specular Glass Beveling & Tactile Spring Micro-Physics */
+.exercise-card,
+.routine-tile,
+.settings-card,
+.neeraj-protocol-modal,
+.form-modal,
+.empty-card,
+.record-card,
+.chart-card,
+.stat-strip,
+.today-routine-card,
+.heatmap-dashboard-card,
+.repeat-workout-card,
+.history-list article,
+.record-row {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-top-color: rgba(255, 255, 255, 0.18) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.55) !important;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.48),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.today-routine-card {
+  border-color: rgba(200, 255, 53, 0.25) !important;
+  border-top-color: rgba(200, 255, 53, 0.52) !important;
+}
+
+/* Zero-delay touch & spring compression physics across all buttons, routine cards, and checkmarks */
+button,
+.primary-button,
+.outline-button,
+.danger-button,
+.icon-button,
+.text-button,
+.nav-button,
+.nav-lift,
+.routine-tile,
+.start-card,
+.today-start-btn,
+.calc-1rm-pill,
+.workout-tool-btn,
+.check-set {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease !important;
+}
+
+button:active,
+.primary-button:active,
+.outline-button:active,
+.danger-button:active,
+.icon-button:active,
+.text-button:active,
+.nav-button:active,
+.routine-tile:active,
+.start-card:active,
+.today-start-btn:active,
+.calc-1rm-pill:active,
+.workout-tool-btn:active,
+.check-set:active {
+  transform: scale(0.97) !important;
+}
+
+.nav-lift:active {
+  transform: translateY(-4px) scale(0.97) !important;
+}
+
+@media (hover: hover) {
+  .routine-tile:hover,
+  .record-card:hover {
+    transform: translateY(-2px);
+    border-top-color: rgba(200, 255, 53, 0.42) !important;
+  }
+}
+

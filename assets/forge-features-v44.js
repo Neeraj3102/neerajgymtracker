@@ -5,6 +5,14 @@ export const h = new Proxy({}, {
   }
 });
 
+export function triggerHaptic(pattern = 28) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(pattern);
+    }
+  } catch (_) {}
+}
+
 // Synthetic Web Audio chime for rest timer completion (no audio files required)
 function playTimerDoneSound() {
   try {
@@ -440,6 +448,7 @@ export function RepeatWorkoutCard({ workouts = [], onRepeat }) {
   return h.createElement(
     "div",
     {
+      className: "repeat-workout-card",
       style: {
         margin: "12px 0",
         padding: "12px 14px",
@@ -515,6 +524,142 @@ export function RepeatWorkoutCard({ workouts = [], onRepeat }) {
       },
       h.createElement("span", null, "⚡"),
       h.createElement("span", null, "Repeat")
+    )
+  );
+}
+
+/* =========================================================================
+   F3B: TODAY'S ROUTINE SMART LAUNCH BANNER (HOME HERO)
+   ========================================================================= */
+const PPL_SEQUENCE = [
+  { id: "neeraj-ppl-push-a", short: "Push A", key: "push a" },
+  { id: "neeraj-ppl-pull-a", short: "Pull A", key: "pull a" },
+  { id: "neeraj-ppl-legs-a", short: "Legs A", key: "legs a" },
+  { id: "neeraj-ppl-push-b", short: "Push B", key: "push b" },
+  { id: "neeraj-ppl-pull-b", short: "Pull B", key: "pull b" },
+  { id: "neeraj-ppl-legs-b", short: "Legs B", key: "legs b" },
+  { id: "neeraj-ppl-rest-recovery", short: "Rest & Recovery", key: "rest & recovery" },
+];
+
+function detectPplSplitIndex(workout) {
+  if (!workout) return -1;
+  if (workout.routineId) {
+    const byId = PPL_SEQUENCE.findIndex((s) => s.id === workout.routineId);
+    if (byId !== -1) return byId;
+  }
+  const name = (workout.name || "").toLowerCase();
+  for (let i = 0; i < PPL_SEQUENCE.length; i++) {
+    if (name.includes(PPL_SEQUENCE[i].key)) return i;
+  }
+  if (name.includes("day 7") || name.includes("rest")) return 6;
+  return -1;
+}
+
+export function TodayRoutineBanner({ workouts = [], routines = [], defaultRoutines = [], onStartRoutine }) {
+  const [idbWorkouts, setIdbWorkouts] = h.useState(null);
+
+  h.useEffect(() => {
+    let cancelled = false;
+    async function readHistory() {
+      try {
+        if (window.__FORGE_DB__ && window.__FORGE_DB__.workouts) {
+          const all = await window.__FORGE_DB__.workouts.toArray();
+          if (!cancelled && Array.isArray(all)) {
+            setIdbWorkouts(all);
+          }
+        }
+      } catch (_) {}
+    }
+    readHistory();
+    return () => { cancelled = true; };
+  }, [workouts]);
+
+  const recommendation = h.useMemo(() => {
+    const source = (workouts && workouts.length > 0) ? workouts : (idbWorkouts || []);
+    const activeWorkouts = source
+      .filter((w) => w && !w.deletedAt)
+      .slice()
+      .sort((a, b) => {
+        const dA = new Date(a.date || a.updatedAt || a.created_at || 0).getTime();
+        const dB = new Date(b.date || b.updatedAt || b.created_at || 0).getTime();
+        if (dB !== dA) return dB - dA;
+        return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+      });
+
+    const latest = activeWorkouts[0] || null;
+    const lastIdx = detectPplSplitIndex(latest);
+    const nextIdx = lastIdx >= 0 ? (lastIdx + 1) % PPL_SEQUENCE.length : 0;
+    const targetSpec = PPL_SEQUENCE[nextIdx];
+
+    const pool = [...(routines || []), ...(defaultRoutines || [])];
+    const routine =
+      pool.find((r) => r && r.id === targetSpec.id) ||
+      pool.find((r) => r && (r.name || "").toLowerCase().includes(targetSpec.key)) ||
+      defaultRoutines[nextIdx] ||
+      defaultRoutines[0] ||
+      null;
+
+    return {
+      routine,
+      targetSpec,
+      lastShort: lastIdx >= 0 ? PPL_SEQUENCE[lastIdx].short : null,
+      dayNum: nextIdx + 1,
+    };
+  }, [workouts, idbWorkouts, routines, defaultRoutines]);
+
+  const { routine, targetSpec, lastShort, dayNum } = recommendation;
+  if (!routine) return null;
+
+  const exCount = Array.isArray(routine.exercises) ? routine.exercises.length : 0;
+  const cleanTitle = (routine.name || targetSpec.short).replace(/\s*—\s*Neeraj PPL$/i, "");
+
+  return h.createElement(
+    "article",
+    { className: "today-routine-card" },
+    h.createElement(
+      "div",
+      { className: "today-routine-top" },
+      h.createElement(
+        "span",
+        { className: "today-routine-eyebrow" },
+        `⚡ TODAY'S ROUTINE · DAY ${dayNum}`
+      ),
+      lastShort
+        ? h.createElement(
+            "span",
+            { className: "today-routine-prev" },
+            `After ${lastShort}`
+          )
+        : h.createElement(
+            "span",
+            { className: "today-routine-prev" },
+            "Split Start"
+          )
+    ),
+    h.createElement(
+      "div",
+      { className: "today-routine-body" },
+      h.createElement(
+        "div",
+        { className: "today-routine-info" },
+        h.createElement("h3", { className: "today-routine-title" }, cleanTitle),
+        h.createElement(
+          "p",
+          { className: "today-routine-meta" },
+          `${exCount} ${exCount === 1 ? "exercise" : "exercises"}`,
+          routine.focus ? ` • ${routine.focus}` : ""
+        )
+      ),
+      h.createElement(
+        "button",
+        {
+          type: "button",
+          className: "today-start-btn",
+          onClick: () => onStartRoutine && onStartRoutine(routine),
+        },
+        h.createElement("span", null, "Start Workout"),
+        h.createElement("span", { "aria-hidden": "true" }, "→")
+      )
     )
   );
 }
@@ -693,6 +838,448 @@ export function OneRepMaxModal({ isOpen = false, onClose, unit = "kg" }) {
             h.createElement("span", { style: { fontWeight: "700", fontFamily: "monospace", color: "#fff" } }, `${loadVal} ${unit}`)
           );
         })
+      )
+    )
+  );
+}
+
+/* =========================================================================
+   F4B: BARBELL PLATE CALCULATOR MODAL
+   ========================================================================= */
+const PLATE_SPECS = {
+  kg: {
+    barWeight: 20,
+    denominations: [25, 20, 15, 10, 5, 2.5, 1.25],
+    presets: [60, 80, 100, 120, 140],
+    colors: {
+      25: { fill: "#dc2626", stroke: "#f87171", text: "#ffffff", h: 112, w: 18, name: "Red" },
+      20: { fill: "#2563eb", stroke: "#60a5fa", text: "#ffffff", h: 104, w: 16, name: "Blue" },
+      15: { fill: "#eab308", stroke: "#fde047", text: "#0b0d0c", h: 92, w: 14, name: "Yellow" },
+      10: { fill: "#16a34a", stroke: "#4ade80", text: "#ffffff", h: 80, w: 13, name: "Green" },
+      5: { fill: "#f4f4f5", stroke: "#d4d4d8", text: "#111827", h: 66, w: 11, name: "White" },
+      2.5: { fill: "#3f3f46", stroke: "#71717a", text: "#f4f4f5", h: 52, w: 9, name: "Grey" },
+      1.25: { fill: "#27272a", stroke: "#71717a", text: "#e4e4e7", h: 42, w: 8, name: "Micro" },
+    },
+  },
+  lb: {
+    barWeight: 45,
+    denominations: [45, 35, 25, 10, 5, 2.5],
+    presets: [135, 185, 225, 275, 315],
+    colors: {
+      45: { fill: "#2563eb", stroke: "#60a5fa", text: "#ffffff", h: 110, w: 17, name: "Blue" },
+      35: { fill: "#eab308", stroke: "#fde047", text: "#0b0d0c", h: 96, w: 15, name: "Yellow" },
+      25: { fill: "#16a34a", stroke: "#4ade80", text: "#ffffff", h: 82, w: 13, name: "Green" },
+      10: { fill: "#f4f4f5", stroke: "#d4d4d8", text: "#111827", h: 66, w: 11, name: "White" },
+      5: { fill: "#3f3f46", stroke: "#71717a", text: "#f4f4f5", h: 52, w: 9, name: "Grey" },
+      2.5: { fill: "#27272a", stroke: "#71717a", text: "#e4e4e7", h: 42, w: 8, name: "Micro" },
+    },
+  },
+};
+
+export function calculatePlateBreakdown(targetWeight, unit = "kg") {
+  const spec = PLATE_SPECS[unit === "lb" ? "lb" : "kg"];
+  const bar = spec.barWeight;
+  const target = Number(targetWeight) || 0;
+  if (target <= bar) {
+    return {
+      barWeight: bar,
+      perSideWeight: 0,
+      achievedTotal: bar,
+      remainderPerSide: 0,
+      breakdown: [],
+      plates: [],
+    };
+  }
+
+  let remaining = Math.round(((target - bar) / 2) * 100) / 100;
+  const breakdown = [];
+  const plates = [];
+
+  for (const denom of spec.denominations) {
+    const count = Math.floor((remaining + 0.0001) / denom);
+    if (count > 0) {
+      breakdown.push({ weight: denom, count, style: spec.colors[denom] });
+      for (let i = 0; i < count; i++) {
+        plates.push({ weight: denom, style: spec.colors[denom] });
+      }
+      remaining = Math.round((remaining - count * denom) * 100) / 100;
+    }
+  }
+
+  const loadedPerSide = plates.reduce((acc, p) => acc + p.weight, 0);
+  const achievedTotal = Math.round((bar + loadedPerSide * 2) * 100) / 100;
+
+  return {
+    barWeight: bar,
+    perSideWeight: Math.round(loadedPerSide * 100) / 100,
+    achievedTotal,
+    remainderPerSide: remaining,
+    breakdown,
+    plates,
+  };
+}
+
+export function BarbellPlateModal({ isOpen = false, onClose, unit = "kg", initialWeight }) {
+  const [activeUnit, setActiveUnit] = h.useState(unit === "lb" ? "lb" : "kg");
+  const [targetInput, setTargetInput] = h.useState(
+    initialWeight ? String(initialWeight) : (unit === "lb" ? "225" : "100")
+  );
+
+  h.useEffect(() => {
+    if (isOpen) {
+      const nextU = unit === "lb" ? "lb" : "kg";
+      setActiveUnit(nextU);
+      if (initialWeight) setTargetInput(String(initialWeight));
+    }
+  }, [isOpen, unit, initialWeight]);
+
+  if (!isOpen) return null;
+
+  const spec = PLATE_SPECS[activeUnit];
+  const calc = calculatePlateBreakdown(parseFloat(targetInput) || 0, activeUnit);
+  const stepAmt = activeUnit === "lb" ? 5 : 2.5;
+
+  const switchUnit = (u) => {
+    if (u === activeUnit) return;
+    const cur = parseFloat(targetInput) || 0;
+    const converted = u === "lb" ? Math.round((cur * 2.20462) / 5) * 5 : Math.round((cur / 2.20462) / 2.5) * 2.5;
+    setActiveUnit(u);
+    setTargetInput(String(converted || (u === "lb" ? 225 : 100)));
+  };
+
+  // Compute dynamic plate coordinates along sleeve so even heavy stacks fit inside SVG viewBox
+  const sleeveStartX = 96;
+  const maxSleeveLen = 216;
+  const rawStackW = calc.plates.reduce((s, p) => s + p.style.w + 3, 0);
+  const scaleFactor = rawStackW > maxSleeveLen ? maxSleeveLen / rawStackW : 1;
+
+  let cursorX = sleeveStartX;
+  const plateRects = calc.plates.map((p, idx) => {
+    const pw = Math.max(5, Math.round(p.style.w * scaleFactor * 10) / 10);
+    const ph = p.style.h;
+    const x = cursorX;
+    const y = 75 - ph / 2;
+    cursorX += pw + 2.5 * scaleFactor;
+    return { ...p, idx, x, y, pw, ph };
+  });
+
+  return h.createElement(
+    "div",
+    {
+      onClick: onClose,
+      className: "forge-modal-backdrop",
+      style: {
+        position: "fixed",
+        inset: 0,
+        zIndex: 1120,
+        background: "rgba(4, 6, 8, 0.78)",
+        backdropFilter: "blur(14px) saturate(160%)",
+        WebkitBackdropFilter: "blur(14px) saturate(160%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+      },
+    },
+    h.createElement(
+      "div",
+      {
+        "data-testid": "plate-modal-card",
+        onClick: (e) => e.stopPropagation(),
+        style: {
+          background: "linear-gradient(160deg, rgba(24, 29, 26, 0.96), rgba(14, 17, 15, 0.98))",
+          border: "1px solid rgba(255, 255, 255, 0.14)",
+          borderTopColor: "rgba(255, 255, 255, 0.24)",
+          borderRadius: "20px",
+          width: "100%",
+          maxWidth: "460px",
+          padding: "20px",
+          color: "#e2e8e3",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.12)",
+          boxSizing: "border-box",
+        },
+      },
+      // Header
+      h.createElement(
+        "div",
+        { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", gap: "8px" } },
+        h.createElement(
+          "div",
+          null,
+          h.createElement("h3", { style: { margin: 0, fontSize: "16px", fontWeight: "800", color: "#fff" } }, "Barbell Plate Calculator"),
+          h.createElement("span", { style: { fontSize: "11px", color: "#8b9089" } }, `Per-side loading (${calc.barWeight} ${activeUnit} Olympic bar)`)
+        ),
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            "aria-label": "Close plate calculator",
+            style: {
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "10px",
+              color: "#cbd5e1",
+              cursor: "pointer",
+              fontSize: "15px",
+              minWidth: "36px",
+              minHeight: "36px",
+            },
+          },
+          "✕"
+        )
+      ),
+      // Unit toggle
+      h.createElement(
+        "div",
+        { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", background: "#101311", padding: "4px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "14px" } },
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => switchUnit("kg"),
+            style: {
+              minHeight: "38px",
+              borderRadius: "9px",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "800",
+              background: activeUnit === "kg" ? "#c8ff35" : "transparent",
+              color: activeUnit === "kg" ? "#0b0d0c" : "#9ca3af",
+            },
+          },
+          "Metric (KG · 20kg Bar)"
+        ),
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => switchUnit("lb"),
+            style: {
+              minHeight: "38px",
+              borderRadius: "9px",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "800",
+              background: activeUnit === "lb" ? "#c8ff35" : "transparent",
+              color: activeUnit === "lb" ? "#0b0d0c" : "#9ca3af",
+            },
+          },
+          "Imperial (LB · 45lb Bar)"
+        )
+      ),
+      // Target Weight Input & Stepper
+      h.createElement(
+        "div",
+        { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" } },
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setTargetInput(String(Math.max(spec.barWeight, (parseFloat(targetInput) || spec.barWeight) - stepAmt * 2))),
+            style: {
+              minWidth: "46px",
+              minHeight: "44px",
+              borderRadius: "12px",
+              background: "#1f2421",
+              border: "1px solid #363e38",
+              color: "#fff",
+              fontWeight: "800",
+              fontSize: "14px",
+              cursor: "pointer",
+            },
+          },
+          `-${stepAmt * 2}`
+        ),
+        h.createElement("input", {
+          type: "number",
+          step: String(stepAmt),
+          min: "0",
+          value: targetInput,
+          onChange: (e) => setTargetInput(e.target.value),
+          "aria-label": `Target weight in ${activeUnit}`,
+          style: {
+            flex: 1,
+            minWidth: 0,
+            minHeight: "44px",
+            background: "#1a1f1c",
+            border: "1px solid #363e38",
+            borderRadius: "12px",
+            padding: "8px 12px",
+            color: "#ffffff",
+            fontSize: "20px",
+            fontWeight: "900",
+            fontFamily: "monospace",
+            textAlign: "center",
+            outline: "none",
+          },
+        }),
+        h.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setTargetInput(String((parseFloat(targetInput) || spec.barWeight) + stepAmt * 2)),
+            style: {
+              minWidth: "46px",
+              minHeight: "44px",
+              borderRadius: "12px",
+              background: "#1f2421",
+              border: "1px solid #363e38",
+              color: "#fff",
+              fontWeight: "800",
+              fontSize: "14px",
+              cursor: "pointer",
+            },
+          },
+          `+${stepAmt * 2}`
+        )
+      ),
+      // Quick Presets
+      h.createElement(
+        "div",
+        { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "14px" } },
+        spec.presets.map((p) =>
+          h.createElement(
+            "button",
+            {
+              key: p,
+              type: "button",
+              onClick: () => setTargetInput(String(p)),
+              style: {
+                flex: "1 1 0",
+                minHeight: "34px",
+                borderRadius: "8px",
+                background: Number(targetInput) === p ? "rgba(200,255,53,0.16)" : "#181d1a",
+                border: Number(targetInput) === p ? "1px solid #c8ff35" : "1px solid #2a312c",
+                color: Number(targetInput) === p ? "#c8ff35" : "#9ca3af",
+                fontSize: "11px",
+                fontWeight: "800",
+                fontFamily: "monospace",
+                cursor: "pointer",
+              },
+            },
+            `${p}${activeUnit}`
+          )
+        )
+      ),
+      // Visual Barbell Sleeve Graphic
+      h.createElement(
+        "div",
+        {
+          style: {
+            background: "#0d100e",
+            border: "1px solid #262e29",
+            borderRadius: "14px",
+            padding: "12px 10px",
+            marginBottom: "14px",
+          },
+        },
+        h.createElement(
+          "svg",
+          {
+            "data-testid": "barbell-graphic",
+            viewBox: "0 0 360 140",
+            style: { width: "100%", height: "auto", display: "block", overflow: "visible" },
+          },
+          // Barbell Shaft (left)
+          h.createElement("rect", { x: "8", y: "69", width: "74", height: "12", rx: "3", fill: "#52525b" }),
+          // Knurling hatch accent
+          h.createElement("rect", { x: "18", y: "69", width: "36", height: "12", fill: "#71717a", opacity: "0.45" }),
+          // Inner Collar Flange
+          h.createElement("rect", { x: "80", y: "52", width: "12", height: "46", rx: "3", fill: "#a1a1aa" }),
+          // Sleeve
+          h.createElement("rect", { x: "92", y: "65", width: "252", height: "20", rx: "4", fill: "#71717a" }),
+          // Stacked Plates
+          plateRects.map((pr) =>
+            h.createElement(
+              "g",
+              { key: pr.idx },
+              h.createElement("rect", {
+                x: pr.x,
+                y: pr.y,
+                width: pr.pw,
+                height: pr.ph,
+                rx: "3",
+                fill: pr.style.fill,
+                stroke: pr.style.stroke,
+                strokeWidth: "1.2",
+              })
+            )
+          ),
+          // End Lock Collar (if plates present)
+          plateRects.length > 0 &&
+            h.createElement("rect", {
+              x: Math.min(332, cursorX + 2),
+              y: "58",
+              width: "8",
+              height: "34",
+              rx: "2",
+              fill: "#c8ff35",
+            })
+        ),
+        h.createElement(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", fontFamily: "monospace", color: "#9ca3af", marginTop: "6px", padding: "0 4px" } },
+          h.createElement("span", null, `PER SIDE: ${calc.perSideWeight} ${activeUnit}`),
+          h.createElement("span", { style: { color: "#c8ff35", fontWeight: "800" } }, `LOADED: ${calc.achievedTotal} ${activeUnit}`)
+        ),
+        calc.remainderPerSide > 0 &&
+          h.createElement(
+            "div",
+            { style: { fontSize: "10px", color: "#f59e0b", marginTop: "4px", textAlign: "center" } },
+            `Closest loadable total with standard plates (${calc.remainderPerSide} ${activeUnit} unallocated per side)`
+          )
+      ),
+      // Plate Breakdown Chips
+      h.createElement(
+        "div",
+        null,
+        h.createElement("div", { style: { fontSize: "10px", fontWeight: "800", color: "#8b9089", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" } }, "Plates Needed Per Side"),
+        calc.breakdown.length === 0
+          ? h.createElement(
+              "div",
+              { style: { padding: "12px", borderRadius: "10px", background: "#181d1a", textAlign: "center", fontSize: "12px", color: "#9ca3af" } },
+              `Empty ${calc.barWeight} ${activeUnit} barbell — add weight above ${calc.barWeight} ${activeUnit} to load plates.`
+            )
+          : h.createElement(
+              "div",
+              { style: { display: "flex", flexWrap: "wrap", gap: "8px" } },
+              calc.breakdown.map((b) =>
+                h.createElement(
+                  "div",
+                  {
+                    key: b.weight,
+                    style: {
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 12px",
+                      borderRadius: "10px",
+                      background: "#181d1a",
+                      border: `1px solid ${b.style.stroke}55`,
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      fontWeight: "800",
+                    },
+                  },
+                  h.createElement("span", {
+                    style: {
+                      width: "12px",
+                      height: "12px",
+                      borderRadius: "50%",
+                      background: b.style.fill,
+                      border: `1px solid ${b.style.stroke}`,
+                      display: "inline-block",
+                    },
+                  }),
+                  h.createElement("span", { style: { color: "#fff" } }, `${b.count} × ${b.weight} ${activeUnit}`)
+                )
+              )
+            )
       )
     )
   );
@@ -1499,10 +2086,10 @@ export const EXERCISE_MUSCLE_MAP = {
 };
 
 export function getMuscleHeatColor(sets) {
-  if (!sets || sets <= 0) return '#27272a'; // Rested
-  if (sets <= 5) return '#10b981'; // Light Stimulus (Emerald)
-  if (sets <= 12) return '#f59e0b'; // Optimal Hypertrophy (Amber)
-  return '#ef4444'; // High Fatigue / MRV (Red)
+  if (!sets || sets <= 0) return '#1e2320'; // Resting / Untrained (Subdued dark outline)
+  if (sets <= 5) return '#2d6a4f'; // Warmed / Maintenance (Muted forest green)
+  if (sets <= 12) return '#c8ff35'; // Optimal Hypertrophy (Electric neon lime)
+  return '#f59e0b'; // High Fatigue / Overload (Amber warning)
 }
 
 export function calculateRecoveryStatus(hoursElapsed) {
@@ -1523,7 +2110,7 @@ export function calculateMuscleVolumes(workouts = [], windowDays = 7, referenceN
       displayName: MUSCLE_DISPLAY_NAMES[m],
       rollingSets: 0,
       recoveryStatus: 'fresh',
-      heatColor: '#27272a',
+      heatColor: '#1e2320',
       hoursSinceLastTrained: undefined,
       lastTrainedDate: null,
     };
@@ -1554,16 +2141,16 @@ export function calculateMuscleVolumes(workouts = [], windowDays = 7, referenceN
         }
       }
       if (!target) {
-        // Broad group fallback
-        const muscleGroup = (ex.muscle || '').toLowerCase();
-        if (muscleGroup.includes('chest')) target = { primary: ['chest'], secondary: ['triceps'] };
-        else if (muscleGroup.includes('back') || muscleGroup.includes('lat')) target = { primary: ['lats'], secondary: ['biceps'] };
-        else if (muscleGroup.includes('shoulder') || muscleGroup.includes('delt')) target = { primary: ['side_delts'], secondary: ['traps'] };
-        else if (muscleGroup.includes('leg') || muscleGroup.includes('quad')) target = { primary: ['quads'], secondary: ['glutes'] };
-        else if (muscleGroup.includes('hamstring')) target = { primary: ['hamstrings'], secondary: ['glutes'] };
-        else if (muscleGroup.includes('arm') || muscleGroup.includes('bicep')) target = { primary: ['biceps'], secondary: [] };
-        else if (muscleGroup.includes('tricep')) target = { primary: ['triceps'], secondary: [] };
-        else if (muscleGroup.includes('core') || muscleGroup.includes('ab')) target = { primary: ['abs'], secondary: [] };
+        // Broad group + exercise name fallback across all 8 core movement families
+        const text = `${ex.muscle || ''} ${ex.exerciseName || ex.name || ''}`.toLowerCase();
+        if (text.includes('chest') || text.includes('pec') || text.includes('bench') || text.includes('fly')) target = { primary: ['chest'], secondary: ['front_delts', 'triceps'] };
+        else if (text.includes('lat') || text.includes('row') || text.includes('pulldown') || text.includes('pull-up') || text.includes('back')) target = { primary: ['lats', 'traps'], secondary: ['biceps', 'rear_delts'] };
+        else if (text.includes('shoulder') || text.includes('delt') || text.includes('lateral raise') || text.includes('overhead press')) target = { primary: ['front_delts', 'side_delts'], secondary: ['traps'] };
+        else if (text.includes('quad') || text.includes('squat') || text.includes('leg press') || text.includes('leg extension')) target = { primary: ['quads'], secondary: ['glutes'] };
+        else if (text.includes('hamstring') || text.includes('rdl') || text.includes('romanian') || text.includes('leg curl') || text.includes('deadlift')) target = { primary: ['hamstrings', 'glutes'], secondary: ['lower_back'] };
+        else if (text.includes('bicep') || text.includes('curl')) target = { primary: ['biceps'], secondary: ['forearms'] };
+        else if (text.includes('tricep') || text.includes('pushdown') || text.includes('dip')) target = { primary: ['triceps'], secondary: [] };
+        else if (text.includes('core') || text.includes('ab') || text.includes('crunch') || text.includes('plank')) target = { primary: ['abs'], secondary: [] };
         else target = { primary: ['chest'], secondary: [] };
       }
 
@@ -1614,347 +2201,193 @@ export function calculateMuscleVolumes(workouts = [], windowDays = 7, referenceN
 }
 
 export function AnatomyMannequin({ muscleData = {}, selectedMuscle = null, onSelectMuscle }) {
-  const [view, setView] = h.useState('front');
+  const getFill = (m) => muscleData[m]?.heatColor || '#1e2320';
+  const getStroke = (m) => (selectedMuscle === m ? '#ffffff' : '#3a443d');
+  const getStrokeW = (m) => (selectedMuscle === m ? '2.5' : '1.15');
 
-  const getFill = (m) => muscleData[m]?.heatColor || '#27272a';
-  const isSelected = (m) => selectedMuscle === m;
+  const views = [
+    { key: 'front', label: 'Anterior (Front)', testId: 'mannequin-front' },
+    { key: 'back', label: 'Posterior (Back)', testId: 'mannequin-back' },
+  ];
 
   return h.createElement(
     "div",
-    { style: { display: "flex", flexDirection: "column", alignItems: "center", width: "100%", userSelect: "none" } },
-    // View Switcher
-    h.createElement(
-      "div",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          background: "#161b17",
-          border: "1px solid #28322a",
-          borderRadius: "10px",
-          padding: "3px",
-          marginBottom: "14px",
-        },
+    {
+      className: "mannequin-dual-grid",
+      style: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "12px",
+        width: "100%",
+        userSelect: "none",
       },
+    },
+    views.map((v) =>
       h.createElement(
-        "button",
+        "div",
         {
-          type: "button",
-          onClick: () => setView('front'),
+          key: v.key,
           style: {
-            padding: "5px 14px",
-            borderRadius: "7px",
-            fontSize: "11px",
-            fontWeight: "800",
-            fontFamily: "monospace",
-            textTransform: "uppercase",
-            border: "none",
-            cursor: "pointer",
-            background: view === 'front' ? "#f59e0b" : "transparent",
-            color: view === 'front' ? "#000" : "#8b9089",
-            transition: "all 0.15s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            background: "radial-gradient(ellipse at center, #18201a 0%, #0d100e 100%)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "inset 0 2px 12px rgba(0,0,0,0.55)",
+            borderRadius: "14px",
+            padding: "10px 8px",
+            minWidth: 0,
           },
         },
-        "Anterior (Front)"
-      ),
-      h.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => setView('back'),
-          style: {
-            padding: "5px 14px",
-            borderRadius: "7px",
-            fontSize: "11px",
-            fontWeight: "800",
-            fontFamily: "monospace",
-            textTransform: "uppercase",
-            border: "none",
-            cursor: "pointer",
-            background: view === 'back' ? "#f59e0b" : "transparent",
-            color: view === 'back' ? "#000" : "#8b9089",
-            transition: "all 0.15s ease",
+        h.createElement(
+          "span",
+          {
+            style: {
+              fontSize: "10px",
+              fontWeight: "800",
+              fontFamily: "monospace",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#a4aca6",
+              marginBottom: "6px",
+            },
           },
-        },
-        "Posterior (Back)"
-      )
-    ),
-    // SVG Mannequin Container
-    h.createElement(
-      "div",
-      {
-        style: {
-          width: "100%",
-          maxWidth: "260px",
-          aspectRatio: "1/2",
-          background: "radial-gradient(ellipse at center, #18201a 0%, #0d100e 100%)",
-          border: "1px solid rgba(245, 158, 11, 0.25)",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(245, 158, 11, 0.05)",
-          borderRadius: "16px",
-          padding: "16px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "inset 0 2px 10px rgba(0,0,0,0.5)",
-        },
-      },
-      h.createElement(
-        "svg",
-        {
-          viewBox: "0 0 200 420",
-          style: { width: "100%", height: "100%", cursor: "pointer" },
-        },
-        // Head & Neck
-        h.createElement("circle", { cx: "100", cy: "30", r: "18", fill: "#1f2420", stroke: "#2e3831", strokeWidth: "1.5" }),
-        h.createElement("path", { d: "M92 48 L108 48 L106 60 L94 60 Z", fill: "#1f2420", stroke: "#2e3831", strokeWidth: "1.5" }),
-
-        view === 'front'
-          ? h.createElement(
-              "g",
-              { id: "anterior" },
-              // Chest
-              h.createElement(
+          v.label
+        ),
+        h.createElement(
+          "svg",
+          {
+            "data-testid": v.testId,
+            viewBox: "25 5 150 355",
+            style: { width: "100%", maxWidth: "165px", height: "auto", cursor: "pointer" },
+          },
+          // Head & Neck wireframe
+          h.createElement("circle", { cx: "100", cy: "30", r: "16", fill: "#161a17", stroke: "#3a443d", strokeWidth: "1.4" }),
+          h.createElement("path", { d: "M92 46 L108 46 L106 58 L94 58 Z", fill: "#161a17", stroke: "#3a443d", strokeWidth: "1.4" }),
+          v.key === 'front'
+            ? h.createElement(
                 "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('chest') },
-                h.createElement("path", {
-                  d: "M98 68 L70 68 C64 74 65 92 78 100 C90 102 98 96 98 88 Z",
-                  fill: getFill('chest'),
-                  stroke: isSelected('chest') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('chest') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M102 68 L130 68 C136 74 135 92 122 100 C110 102 102 96 102 88 Z",
-                  fill: getFill('chest'),
-                  stroke: isSelected('chest') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('chest') ? "2.5" : "1",
-                })
-              ),
-              // Front Delts
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('front_delts') },
-                h.createElement("path", {
-                  d: "M68 66 C60 68 52 76 54 88 C58 92 64 88 68 84 Z",
-                  fill: getFill('front_delts'),
-                  stroke: isSelected('front_delts') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('front_delts') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M132 66 C140 68 148 76 146 88 C142 92 136 88 132 84 Z",
-                  fill: getFill('front_delts'),
-                  stroke: isSelected('front_delts') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('front_delts') ? "2.5" : "1",
-                })
-              ),
-              // Biceps
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('biceps') },
-                h.createElement("path", {
-                  d: "M52 90 C48 98 46 114 50 124 C56 124 58 114 58 102 Z",
-                  fill: getFill('biceps'),
-                  stroke: isSelected('biceps') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('biceps') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M148 90 C152 98 154 114 150 124 C144 124 142 114 142 102 Z",
-                  fill: getFill('biceps'),
-                  stroke: isSelected('biceps') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('biceps') ? "2.5" : "1",
-                })
-              ),
-              // Forearms
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('forearms') },
-                h.createElement("path", {
-                  d: "M48 126 C44 136 40 156 42 168 C46 168 50 154 52 140 Z",
-                  fill: getFill('forearms'),
-                  stroke: isSelected('forearms') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('forearms') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M152 126 C156 136 160 156 158 168 C154 168 150 154 148 140 Z",
-                  fill: getFill('forearms'),
-                  stroke: isSelected('forearms') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('forearms') ? "2.5" : "1",
-                })
-              ),
-              // Abs / 6-pack
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('abs') },
-                h.createElement("path", { d: "M82 104 L98 104 L98 118 L82 118 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" }),
-                h.createElement("path", { d: "M102 104 L118 104 L118 118 L102 118 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" }),
-                h.createElement("path", { d: "M82 122 L98 122 L98 136 L82 136 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" }),
-                h.createElement("path", { d: "M102 122 L118 122 L118 136 L102 136 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" }),
-                h.createElement("path", { d: "M84 140 L98 140 L98 154 L84 154 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" }),
-                h.createElement("path", { d: "M102 140 L116 140 L116 154 L102 154 Z", fill: getFill('abs'), stroke: isSelected('abs') ? "#f59e0b" : "#3f4942", strokeWidth: isSelected('abs') ? "2" : "1" })
-              ),
-              // Quads
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('quads') },
-                h.createElement("path", {
-                  d: "M74 172 C68 188 64 220 70 252 C78 256 86 250 92 236 C96 216 94 186 92 172 Z",
-                  fill: getFill('quads'),
-                  stroke: isSelected('quads') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('quads') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M126 172 C132 188 136 220 130 252 C122 256 114 250 108 236 C104 216 106 186 108 172 Z",
-                  fill: getFill('quads'),
-                  stroke: isSelected('quads') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('quads') ? "2.5" : "1",
-                })
-              ),
-              // Calves
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('calves') },
-                h.createElement("path", {
-                  d: "M70 268 C64 286 64 316 72 344 C78 346 84 340 84 326 C86 304 84 280 82 268 Z",
-                  fill: getFill('calves'),
-                  stroke: isSelected('calves') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('calves') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M130 268 C136 286 136 316 128 344 C122 346 116 340 116 326 C114 304 116 280 118 268 Z",
-                  fill: getFill('calves'),
-                  stroke: isSelected('calves') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('calves') ? "2.5" : "1",
-                })
+                { id: "anterior" },
+                // Chest
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('chest') },
+                  h.createElement("path", { d: "M98 68 L70 68 C64 74 65 92 78 100 C90 102 98 96 98 88 Z", fill: getFill('chest'), stroke: getStroke('chest'), strokeWidth: getStrokeW('chest') }),
+                  h.createElement("path", { d: "M102 68 L130 68 C136 74 135 92 122 100 C110 102 102 96 102 88 Z", fill: getFill('chest'), stroke: getStroke('chest'), strokeWidth: getStrokeW('chest') })
+                ),
+                // Shoulders (Front & Lateral Delts)
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('front_delts') },
+                  h.createElement("path", { d: "M68 66 C60 68 52 76 54 88 C58 92 64 88 68 84 Z", fill: getFill('front_delts'), stroke: getStroke('front_delts'), strokeWidth: getStrokeW('front_delts') }),
+                  h.createElement("path", { d: "M132 66 C140 68 148 76 146 88 C142 92 136 88 132 84 Z", fill: getFill('front_delts'), stroke: getStroke('front_delts'), strokeWidth: getStrokeW('front_delts') })
+                ),
+                // Side Delts cap
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('side_delts') },
+                  h.createElement("path", { d: "M53 74 C47 78 46 88 51 94 C54 92 56 86 55 80 Z", fill: getFill('side_delts'), stroke: getStroke('side_delts'), strokeWidth: getStrokeW('side_delts') }),
+                  h.createElement("path", { d: "M147 74 C153 78 154 88 149 94 C146 92 144 86 145 80 Z", fill: getFill('side_delts'), stroke: getStroke('side_delts'), strokeWidth: getStrokeW('side_delts') })
+                ),
+                // Biceps
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('biceps') },
+                  h.createElement("path", { d: "M52 92 C48 100 46 116 50 124 C56 124 58 114 58 102 Z", fill: getFill('biceps'), stroke: getStroke('biceps'), strokeWidth: getStrokeW('biceps') }),
+                  h.createElement("path", { d: "M148 92 C152 100 154 116 150 124 C144 124 142 114 142 102 Z", fill: getFill('biceps'), stroke: getStroke('biceps'), strokeWidth: getStrokeW('biceps') })
+                ),
+                // Forearms
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('forearms') },
+                  h.createElement("path", { d: "M48 126 C44 136 40 156 42 168 C46 168 50 154 52 140 Z", fill: getFill('forearms'), stroke: getStroke('forearms'), strokeWidth: getStrokeW('forearms') }),
+                  h.createElement("path", { d: "M152 126 C156 136 160 156 158 168 C154 168 150 154 148 140 Z", fill: getFill('forearms'), stroke: getStroke('forearms'), strokeWidth: getStrokeW('forearms') })
+                ),
+                // Core / Abs
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('abs') },
+                  h.createElement("path", { d: "M82 104 L98 104 L98 118 L82 118 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') }),
+                  h.createElement("path", { d: "M102 104 L118 104 L118 118 L102 118 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') }),
+                  h.createElement("path", { d: "M82 122 L98 122 L98 136 L82 136 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') }),
+                  h.createElement("path", { d: "M102 122 L118 122 L118 136 L102 136 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') }),
+                  h.createElement("path", { d: "M84 140 L98 140 L98 154 L84 154 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') }),
+                  h.createElement("path", { d: "M102 140 L116 140 L116 154 L102 154 Z", fill: getFill('abs'), stroke: getStroke('abs'), strokeWidth: getStrokeW('abs') })
+                ),
+                // Quads
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('quads') },
+                  h.createElement("path", { d: "M74 172 C68 188 64 220 70 252 C78 256 86 250 92 236 C96 216 94 186 92 172 Z", fill: getFill('quads'), stroke: getStroke('quads'), strokeWidth: getStrokeW('quads') }),
+                  h.createElement("path", { d: "M126 172 C132 188 136 220 130 252 C122 256 114 250 108 236 C104 216 106 186 108 172 Z", fill: getFill('quads'), stroke: getStroke('quads'), strokeWidth: getStrokeW('quads') })
+                ),
+                // Calves
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('calves') },
+                  h.createElement("path", { d: "M70 268 C64 286 64 316 72 344 C78 346 84 340 84 326 C86 304 84 280 82 268 Z", fill: getFill('calves'), stroke: getStroke('calves'), strokeWidth: getStrokeW('calves') }),
+                  h.createElement("path", { d: "M130 268 C136 286 136 316 128 344 C122 346 116 340 116 326 C114 304 116 280 118 268 Z", fill: getFill('calves'), stroke: getStroke('calves'), strokeWidth: getStrokeW('calves') })
+                )
               )
-            )
-          : h.createElement(
-              "g",
-              { id: "posterior" },
-              // Traps
-              h.createElement(
+            : h.createElement(
                 "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('traps') },
-                h.createElement("path", {
-                  d: "M100 56 L78 68 C74 74 84 88 100 96 C116 88 126 74 122 68 Z",
-                  fill: getFill('traps'),
-                  stroke: isSelected('traps') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('traps') ? "2.5" : "1",
-                })
-              ),
-              // Rear Delts
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('rear_delts') },
-                h.createElement("path", {
-                  d: "M74 68 C64 70 56 80 58 90 C62 92 68 88 72 82 Z",
-                  fill: getFill('rear_delts'),
-                  stroke: isSelected('rear_delts') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('rear_delts') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M126 68 C136 70 144 80 142 90 C138 92 132 88 128 82 Z",
-                  fill: getFill('rear_delts'),
-                  stroke: isSelected('rear_delts') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('rear_delts') ? "2.5" : "1",
-                })
-              ),
-              // Triceps
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('triceps') },
-                h.createElement("path", {
-                  d: "M52 92 C46 102 44 118 48 128 C54 126 56 116 56 104 Z",
-                  fill: getFill('triceps'),
-                  stroke: isSelected('triceps') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('triceps') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M148 92 C154 102 156 118 152 128 C146 126 144 116 144 104 Z",
-                  fill: getFill('triceps'),
-                  stroke: isSelected('triceps') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('triceps') ? "2.5" : "1",
-                })
-              ),
-              // Lats
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('lats') },
-                h.createElement("path", {
-                  d: "M74 94 C68 108 66 126 76 138 C84 134 88 120 86 104 Z",
-                  fill: getFill('lats'),
-                  stroke: isSelected('lats') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('lats') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M126 94 C132 108 134 126 124 138 C116 134 112 120 114 104 Z",
-                  fill: getFill('lats'),
-                  stroke: isSelected('lats') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('lats') ? "2.5" : "1",
-                })
-              ),
-              // Lower Back
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('lower_back') },
-                h.createElement("path", {
-                  d: "M86 106 L114 106 C112 124 114 144 112 154 L88 154 C86 144 88 124 86 106 Z",
-                  fill: getFill('lower_back'),
-                  stroke: isSelected('lower_back') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('lower_back') ? "2.5" : "1",
-                })
-              ),
-              // Glutes
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('glutes') },
-                h.createElement("path", {
-                  d: "M76 158 C72 176 74 198 88 206 C96 206 98 194 98 174 L98 158 Z",
-                  fill: getFill('glutes'),
-                  stroke: isSelected('glutes') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('glutes') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M124 158 C128 176 126 198 112 206 C104 206 102 194 102 174 L102 158 Z",
-                  fill: getFill('glutes'),
-                  stroke: isSelected('glutes') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('glutes') ? "2.5" : "1",
-                })
-              ),
-              // Hamstrings
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('hamstrings') },
-                h.createElement("path", {
-                  d: "M74 210 C70 228 68 248 74 266 C82 266 88 254 90 236 C92 222 90 212 88 210 Z",
-                  fill: getFill('hamstrings'),
-                  stroke: isSelected('hamstrings') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('hamstrings') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M126 210 C130 228 132 248 126 266 C118 266 112 254 110 236 C108 222 110 212 112 210 Z",
-                  fill: getFill('hamstrings'),
-                  stroke: isSelected('hamstrings') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('hamstrings') ? "2.5" : "1",
-                })
-              ),
-              // Calves Posterior
-              h.createElement(
-                "g",
-                { onClick: () => onSelectMuscle && onSelectMuscle('calves') },
-                h.createElement("path", {
-                  d: "M70 274 C62 292 62 316 70 342 C78 344 84 338 86 324 C88 304 84 284 80 274 Z",
-                  fill: getFill('calves'),
-                  stroke: isSelected('calves') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('calves') ? "2.5" : "1",
-                }),
-                h.createElement("path", {
-                  d: "M130 274 C138 292 138 316 130 342 C122 344 116 338 114 324 C112 304 116 284 120 274 Z",
-                  fill: getFill('calves'),
-                  stroke: isSelected('calves') ? "#f59e0b" : "#3f4942",
-                  strokeWidth: isSelected('calves') ? "2.5" : "1",
-                })
+                { id: "posterior" },
+                // Traps
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('traps') },
+                  h.createElement("path", { d: "M100 56 L78 68 C74 74 84 88 100 96 C116 88 126 74 122 68 Z", fill: getFill('traps'), stroke: getStroke('traps'), strokeWidth: getStrokeW('traps') })
+                ),
+                // Rear Delts
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('rear_delts') },
+                  h.createElement("path", { d: "M74 68 C64 70 56 80 58 90 C62 92 68 88 72 82 Z", fill: getFill('rear_delts'), stroke: getStroke('rear_delts'), strokeWidth: getStrokeW('rear_delts') }),
+                  h.createElement("path", { d: "M126 68 C136 70 144 80 142 90 C138 92 132 88 128 82 Z", fill: getFill('rear_delts'), stroke: getStroke('rear_delts'), strokeWidth: getStrokeW('rear_delts') })
+                ),
+                // Triceps
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('triceps') },
+                  h.createElement("path", { d: "M52 92 C46 102 44 118 48 128 C54 126 56 116 56 104 Z", fill: getFill('triceps'), stroke: getStroke('triceps'), strokeWidth: getStrokeW('triceps') }),
+                  h.createElement("path", { d: "M148 92 C154 102 156 118 152 128 C146 126 144 116 144 104 Z", fill: getFill('triceps'), stroke: getStroke('triceps'), strokeWidth: getStrokeW('triceps') })
+                ),
+                // Lats
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('lats') },
+                  h.createElement("path", { d: "M74 94 C68 108 66 126 76 138 C84 134 88 120 86 104 Z", fill: getFill('lats'), stroke: getStroke('lats'), strokeWidth: getStrokeW('lats') }),
+                  h.createElement("path", { d: "M126 94 C132 108 134 126 124 138 C116 134 112 120 114 104 Z", fill: getFill('lats'), stroke: getStroke('lats'), strokeWidth: getStrokeW('lats') })
+                ),
+                // Lower Back
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('lower_back') },
+                  h.createElement("path", { d: "M86 106 L114 106 C112 124 114 144 112 154 L88 154 C86 144 88 124 86 106 Z", fill: getFill('lower_back'), stroke: getStroke('lower_back'), strokeWidth: getStrokeW('lower_back') })
+                ),
+                // Glutes
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('glutes') },
+                  h.createElement("path", { d: "M76 158 C72 176 74 198 88 206 C96 206 98 194 98 174 L98 158 Z", fill: getFill('glutes'), stroke: getStroke('glutes'), strokeWidth: getStrokeW('glutes') }),
+                  h.createElement("path", { d: "M124 158 C128 176 126 198 112 206 C104 206 102 194 102 174 L102 158 Z", fill: getFill('glutes'), stroke: getStroke('glutes'), strokeWidth: getStrokeW('glutes') })
+                ),
+                // Hamstrings
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('hamstrings') },
+                  h.createElement("path", { d: "M74 210 C70 228 68 248 74 266 C82 266 88 254 90 236 C92 222 90 212 88 210 Z", fill: getFill('hamstrings'), stroke: getStroke('hamstrings'), strokeWidth: getStrokeW('hamstrings') }),
+                  h.createElement("path", { d: "M126 210 C130 228 132 248 126 266 C118 266 112 254 110 236 C108 222 110 212 112 210 Z", fill: getFill('hamstrings'), stroke: getStroke('hamstrings'), strokeWidth: getStrokeW('hamstrings') })
+                ),
+                // Calves Posterior
+                h.createElement(
+                  "g",
+                  { onClick: () => onSelectMuscle && onSelectMuscle('calves') },
+                  h.createElement("path", { d: "M70 274 C62 292 62 316 70 342 C78 344 84 338 86 324 C88 304 84 284 80 274 Z", fill: getFill('calves'), stroke: getStroke('calves'), strokeWidth: getStrokeW('calves') }),
+                  h.createElement("path", { d: "M130 274 C138 292 138 316 130 342 C122 344 116 338 114 324 C112 304 116 284 120 274 Z", fill: getFill('calves'), stroke: getStroke('calves'), strokeWidth: getStrokeW('calves') })
+                )
               )
-            )
+        )
       )
     )
   );
@@ -2156,10 +2589,10 @@ export function MuscleDetailModal({ muscle, data, onClose }) {
   );
 }
 
-export function MuscleHeatmapDashboard() {
+export function MuscleHeatmapDashboard({ workouts: propWorkouts = null } = {}) {
   const [windowDays, setWindowDays] = h.useState(7);
   const [selectedMuscle, setSelectedMuscle] = h.useState(null);
-  const [workouts, setWorkouts] = h.useState([]);
+  const [workouts, setWorkouts] = h.useState(propWorkouts || []);
   const [loading, setLoading] = h.useState(true);
 
   h.useEffect(() => {
@@ -2169,9 +2602,14 @@ export function MuscleHeatmapDashboard() {
         if (window.__FORGE_DB__ && window.__FORGE_DB__.workouts) {
           const w = await window.__FORGE_DB__.workouts.toArray();
           if (!cancelled) {
-            setWorkouts(w || []);
+            setWorkouts(w && w.length > 0 ? w : (propWorkouts || []));
             setLoading(false);
+            return;
           }
+        }
+        if (!cancelled && propWorkouts) {
+          setWorkouts(propWorkouts);
+          setLoading(false);
         }
       } catch (_) {
         if (!cancelled) setLoading(false);
@@ -2179,7 +2617,7 @@ export function MuscleHeatmapDashboard() {
     }
     loadWorkouts();
     return () => { cancelled = true; };
-  }, []);
+  }, [propWorkouts]);
 
   const muscleVolumes = h.useMemo(() => {
     return calculateMuscleVolumes(workouts, windowDays);
@@ -2205,15 +2643,16 @@ export function MuscleHeatmapDashboard() {
   return h.createElement(
     "section",
     {
+      className: "heatmap-dashboard-card",
       style: {
         background: "#121614",
         border: "1px solid #28322a",
         borderRadius: "16px",
         padding: "16px",
-        margin: "16px 0",
+        margin: "0",
         display: "flex",
         flexDirection: "column",
-        gap: "16px",
+        gap: "14px",
       },
     },
     // Top Bar
@@ -2246,8 +2685,8 @@ export function MuscleHeatmapDashboard() {
               fontFamily: "monospace",
               border: "none",
               cursor: "pointer",
-              background: windowDays === 7 ? "#f59e0b" : "transparent",
-              color: windowDays === 7 ? "#000" : "#8b9089",
+              background: windowDays === 7 ? "#c8ff35" : "transparent",
+              color: windowDays === 7 ? "#0b0d0c" : "#8b9089",
             },
           },
           "7-DAY"
@@ -2265,8 +2704,8 @@ export function MuscleHeatmapDashboard() {
               fontFamily: "monospace",
               border: "none",
               cursor: "pointer",
-              background: windowDays === 14 ? "#f59e0b" : "transparent",
-              color: windowDays === 14 ? "#000" : "#8b9089",
+              background: windowDays === 14 ? "#c8ff35" : "transparent",
+              color: windowDays === 14 ? "#0b0d0c" : "#8b9089",
             },
           },
           "14-DAY"
@@ -2276,7 +2715,7 @@ export function MuscleHeatmapDashboard() {
     // KPI Cards
     h.createElement(
       "div",
-      { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "8px" } },
+      { className: "heatmap-kpi-grid", style: { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px" } },
       h.createElement(
         "div",
         { style: { background: "#181d19", border: "1px solid #28322a", borderRadius: "10px", padding: "8px 10px" } },
@@ -2287,19 +2726,19 @@ export function MuscleHeatmapDashboard() {
         "div",
         { style: { background: "#181d19", border: "1px solid #28322a", borderRadius: "10px", padding: "8px 10px" } },
         h.createElement("div", { style: { fontSize: "9px", color: "#8b9089", fontFamily: "monospace", fontWeight: "700" } }, "TRAINED GROUPS"),
-        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#10b981", marginTop: "2px" } }, stats.activeMuscles + " / 15")
+        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#4ade80", marginTop: "2px" } }, stats.activeMuscles + " / 15")
       ),
       h.createElement(
         "div",
         { style: { background: "#181d19", border: "1px solid #28322a", borderRadius: "10px", padding: "8px 10px" } },
         h.createElement("div", { style: { fontSize: "9px", color: "#8b9089", fontFamily: "monospace", fontWeight: "700" } }, "OPTIMAL (6-12s)"),
-        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#f59e0b", marginTop: "2px" } }, stats.optimalCount)
+        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#c8ff35", marginTop: "2px" } }, stats.optimalCount)
       ),
       h.createElement(
         "div",
         { style: { background: "#181d19", border: "1px solid #28322a", borderRadius: "10px", padding: "8px 10px" } },
-        h.createElement("div", { style: { fontSize: "9px", color: "#8b9089", fontFamily: "monospace", fontWeight: "700" } }, "HIGH FATIGUE"),
-        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#ef4444", marginTop: "2px" } }, stats.highFatigueCount)
+        h.createElement("div", { style: { fontSize: "9px", color: "#8b9089", fontFamily: "monospace", fontWeight: "700" } }, "HIGH FATIGUE (13+)"),
+        h.createElement("div", { style: { fontSize: "16px", fontWeight: "800", color: "#f59e0b", marginTop: "2px" } }, stats.highFatigueCount)
       )
     ),
     // Mannequin
@@ -2308,14 +2747,14 @@ export function MuscleHeatmapDashboard() {
       selectedMuscle,
       onSelectMuscle: (m) => setSelectedMuscle(m),
     }),
-    // Legend
+    // Legend (Step 3 color scheme)
     h.createElement(
       "div",
-      { style: { display: "flex", justifyContent: "center", gap: "12px", fontSize: "10px", fontFamily: "monospace", color: "#8b9089" } },
-      h.createElement("span", { style: { display: "flex", alignItems: "center", gap: "4px" } }, h.createElement("span", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#27272a" } }), "0s Rested"),
-      h.createElement("span", { style: { display: "flex", alignItems: "center", gap: "4px" } }, h.createElement("span", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" } }), "1-5s Light"),
-      h.createElement("span", { style: { display: "flex", alignItems: "center", gap: "4px" } }, h.createElement("span", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#f59e0b" } }), "6-12s Opt"),
-      h.createElement("span", { style: { display: "flex", alignItems: "center", gap: "4px" } }, h.createElement("span", { style: { width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" } }), ">12s High")
+      { className: "heatmap-legend", style: { display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "10px 14px", fontSize: "11px", fontFamily: "monospace", color: "#cbd5e1", background: "#161b17", border: "1px solid #28322a", borderRadius: "10px", padding: "8px 12px" } },
+      h.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, h.createElement("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: "#1e2320", border: "1px solid #525d56" } }), "0s Resting"),
+      h.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, h.createElement("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: "#2d6a4f" } }), "1-5s Warmed"),
+      h.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, h.createElement("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: "#c8ff35" } }), "6-12s Optimal"),
+      h.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: "6px" } }, h.createElement("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: "#f59e0b" } }), "13+ Overload")
     ),
     // Recovery Deck
     h.createElement(RecoveryDeck, {

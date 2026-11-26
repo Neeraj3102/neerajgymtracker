@@ -1,5 +1,5 @@
 // FORGE Bulletproof Offline-First Service Worker (v45)
-const CACHE_NAME = 'forge-pwa-v48';
+const CACHE_NAME = 'forge-pwa-v52';
 const OFFLINE_URL = '/index.html';
 
 const ASSETS_TO_PRECACHE = [
@@ -9,15 +9,15 @@ const ASSETS_TO_PRECACHE = [
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/assets/index-v44.js',
-  '/assets/forge-features-v44.js',
+  '/assets/index-v44.js?v=stealth-v52',
+  '/assets/forge-features-v44.js?v=stealth-v52',
   '/assets/neeraj-ppl-plan-v43.js',
   '/assets/profiles-manager-v43.js',
   '/assets/supabase-client-v43.js',
-  '/assets/index-XoPE8YWT.css?v=stealth-v48',
-  '/assets/routine-scroll.css?v=stealth-v48',
-  '/assets/ppl-groups.css?v=stealth-v48',
-  '/assets/mobile-enhancements.css?v=stealth-v48'
+  '/assets/index-XoPE8YWT.css?v=stealth-v52',
+  '/assets/routine-scroll.css?v=stealth-v52',
+  '/assets/ppl-groups.css?v=stealth-v52',
+  '/assets/mobile-enhancements.css?v=stealth-v52'
 ];
 
 self.addEventListener('install', (event) => {
