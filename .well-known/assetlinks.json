@@ -1,8 +1,0 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "app.forge.gymtracker",
-    "sha256_cert_fingerprints": ["C9:2C:E2:92:09:E8:7C:3B:C3:BB:70:92:7B:93:B7:5B:42:A6:B2:41:B5:97:88:99:18:55:CE:62:E1:81:09:B3"]
-  }
-}]
