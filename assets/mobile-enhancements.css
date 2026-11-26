@@ -68,7 +68,9 @@ body {
 .main-content,
 .workout-content {
   width: 100% !important;
-  max-width: 100% !important;
+  max-width: 1240px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   min-width: 0 !important;
   height: auto !important;
   overflow: visible !important;
@@ -82,10 +84,15 @@ body {
 
 /* Topbar notch & Dynamic Island protection */
 .topbar {
+  width: 100% !important;
+  max-width: 1240px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
   padding-top: var(--sat) !important;
   height: calc(74px + var(--sat)) !important;
-  padding-left: max(16px, var(--sal)) !important;
-  padding-right: max(16px, var(--sar)) !important;
+  padding-left: max(28px, var(--sal)) !important;
+  padding-right: max(28px, var(--sar)) !important;
   background: rgba(9, 10, 13, 0.84) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
@@ -666,6 +673,14 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
 
 /* 4. Desktop / Laptop (>= 768px) Overlap & Floating Dock Polish */
 @media (min-width: 768px) {
+  .topbar,
+  .main-content,
+  .workout-content {
+    max-width: 1240px !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+
   .hero-grid {
     align-items: center !important;
     padding-bottom: 20px !important;
@@ -690,8 +705,15 @@ button, a, input, select, textarea, .nav-button, .nav-lift, .icon-button {
 
 /* 5. Mobile (<= 640px) Ergonomics */
 @media (max-width: 640px) {
+  .topbar {
+    padding-left: max(16px, var(--sal)) !important;
+    padding-right: max(16px, var(--sar)) !important;
+  }
+
   .main-content {
     padding-top: 14px !important;
+    padding-left: max(16px, var(--sal)) !important;
+    padding-right: max(16px, var(--sar)) !important;
     padding-bottom: calc(220px + var(--sab, 0px)) !important;
   }
 
